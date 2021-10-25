@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  flask:
+    build:
+      context: ./services/flask_app
+      dockerfile: Dockerfile
+    command: gunicorn --bind 0.0.0.0:5000 app:app
+    volumes:
+      - static:/home/app/flask_app/static
+    expose:
+      - 5000
+    env_file:
+      - ./.env.dev
+  nginx:
+    restart: always
+    build: ./services/nginx
+    volumes:
+      - static:/home/app/flask_app/static
+    ports:
+      - "80:80"
+    depends_on:
+      - flask
+volumes:
+  static:
