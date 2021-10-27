@@ -1,4 +1,4 @@
 /security/*
 gitToken
 git_clone.sh
-
+/services/flask_app/access_s3

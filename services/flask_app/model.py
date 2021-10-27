@@ -1,11 +1,17 @@
 import xgboost as xgb
 import boto3
 
+with open("access_s3") as f:
+    access = f.read().strip().split('\n')
+
+    ACCESS_KEY = access[0]
+    ACCESS_SECRET_KEY = access[1]
+
 def load_files_from_s3():
     s3_resource = boto3.resource(
         "s3",
-        aws_access_key_id="AKIATSAITSQ35WWPFWKJ",
-        aws_secret_access_key="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",
+        aws_access_key_id=ACCESS_KEY,
+        aws_secret_access_key=ACCESS_SECRET_KEY,
         region_name="us-east-2"
     )
     bucket = s3_resource.Bucket(name='made-classifier-food-type')
