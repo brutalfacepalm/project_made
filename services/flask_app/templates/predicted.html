@@ -5,59 +5,25 @@
     <div class="row d-flex justify-content-center">
         <div class="card" style="width: 70%;">
             <div class="card-header text-center">
-                <h2>Результаты прогноза убытков</h2>
+                <h2>Категории для твоих блюд</h2>
             </div>
             <div class="card-body">
-                <div class="card-text container">
-                    {% if response.verdict_claimcounts == 'Высокая аварийность' %}
-                        <div class="row justify-content-around" style='background-color: rgba(255, 115, 115, 0.5);'>
-                    {% elif response.verdict_claimcounts == 'Умеренная аварийность' %}
-                        <div class="row justify-content-around" style='background-color: rgba(255, 224, 115, 0.5);'>
-                    {% else %}
-                        <div class="row justify-content-around" style='background-color: rgba(184, 244, 110, 0.5);'>
-                    {% endif %}
-                        <div class="col">Число страховых случаев: </div>
-                        <div class="col"><b>{{ response.value_claimcounts }}</b>
-                            <sub>({{ response.value_claimcounts_probability }}%)</sub></div>
-                        <div class="col">
-                            <b>{{ response.verdict_claimcounts }}</b>
-                        </div>
+                <div class="row justify-content-around" style='background-color: rgba(184, 244, 110, 0.5);'>
+                    <div class="col">
+                        Категория:
                     </div>
-                    {% if response.verdict_avgclaim == 'Высокий средний убыток' %}
-                        <div class="row justify-content-around" style='background-color: rgba(255, 115, 115, 0.5);'>
-                    {% elif response.verdict_avgclaim == 'Умеренный средний убыток' %}
-                        <div class="row justify-content-around" style='background-color: rgba(255, 224, 115, 0.5);'>
-                    {% else %}
-                        <div class="row justify-content-around" style='background-color: rgba(184, 244, 110, 0.5);'>
-                    {% endif %}
-                        <div class="col">Средний убыток: </div>
-                        <div class="col"><b>{{ response.value_avgclaim }}</b> &#8381</div>
-                        <div class="col">
-                            <b>{{ response.verdict_avgclaim }}</b>
-                        </div>
+                    <div class="col">
+                        <b>{{ response.prediction }}</b>
                     </div>
-                    {% if response.verdict_claimamount == 'Высокий общий убыток' %}
-                        <div class="row justify-content-around" style='background-color: rgba(255, 115, 115, 0.5);'>
-                    {% elif response.verdict_claimamount == 'Умеренный общий убыток' %}
-                        <div class="row justify-content-around" style='background-color: rgba(255, 224, 115, 0.5);'>
-                    {% else %}
-                        <div class="row justify-content-around" style='background-color: rgba(184, 244, 110, 0.5);'>
-                    {% endif %}
-                        <div class="col">Убыток: </div>
-                        <div class="col"><b>{{ response.value_claimamount }}</b> &#8381</div>
-                        <div class="col">
-                            <b>{{ response.verdict_claimamount }}</b>
-                        </div>
+                </div>
+                <div class="row justify-content-around">
+                    <div class="text-center">
+                        <a href="{{ url_for('predict_form') }}" class="btn btn-primary">Назад</a>
                     </div>
-                    <div class="row justify-content-around">
-                        <div class="text-center">
-                            <a href="{{ url_for('predict_form') }}" class="btn btn-primary">Назад</a>
-                        </div>
-                    </div>
-                    <div class="row justify-content-around">
-                        <div class="text-center">
-                            <a href="{{ url_for('index') }}" class="btn btn-primary" style="color: white;">Главная</a>
-                        </div>
+                </div>
+                <div class="row justify-content-around">
+                    <div class="text-center">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary" style="color: white;">Главная</a>
                     </div>
                 </div>
             </div>

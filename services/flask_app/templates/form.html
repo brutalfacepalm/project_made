@@ -1,7 +1,7 @@
 {% extends "index.html" %}
-{% block title %}Форма ввода данных о клиенте{% endblock %}
+{% block title %}Название и описание блюда{% endblock %}
 {% block content %}
-<h1 class="text-center">Данные о клиенте</h1>
+<h1 class="text-center">Информация о блюде</h1>
 <br>
 <div class="container" style="width: 70%;">
     <form method="POST" action="{{ url_for('predict_form') }}">

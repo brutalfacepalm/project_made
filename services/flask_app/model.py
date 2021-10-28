@@ -22,8 +22,4 @@ def load_files_from_s3():
 
 def get_model():
     load_files_from_s3()
-    model_avgclaim = xgb.XGBRegressor()
-    model_avgclaim.load_model('avg_claims_model.pkl')
-    model_claimcounts = xgb.XGBClassifier()
-    model_claimcounts.load_model('claim_counts_model.pkl')
-    return model_avgclaim, model_claimcounts
+    return lambda x: 'This is test food category'
