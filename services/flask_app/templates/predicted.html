@@ -1,32 +1,59 @@
+
 {% extends "index.html" %}
-{% block title %}Результаты{% endblock %}
+{% block title %}Название и описание блюда{% endblock %}
+{% block header_present %}Присоединитесь к надежному партнеру по доставке еды{% endblock %}
+{% block header_present_buttom %}
+    <a href="https://www.delivery-club.ru/partners?step=1">
+      <div>
+        Подключиться
+      </div>
+    </a>
+{% endblock %}
 {% block content %}
     {% if not response.error %}
-    <div class="row d-flex justify-content-center">
-        <div class="card" style="width: 70%;">
-            <div class="card-header text-center">
-                <h2>Категории для твоих блюд</h2>
-            </div>
-            <div class="card-body">
-                <div class="row justify-content-around" style='background-color: rgba(184, 244, 110, 0.5);'>
-                    <div class="col">
-                        Категория:
-                    </div>
-                    <div class="col">
-                        <b>{{ response.prediction }}</b>
-                    </div>
-                </div>
-                <div class="row justify-content-around">
-                    <div class="text-center">
-                        <a href="{{ url_for('predict_form') }}" class="btn btn-primary">Назад</a>
-                    </div>
-                </div>
-                <div class="row justify-content-around">
-                    <div class="text-center">
-                        <a href="{{ url_for('index') }}" class="btn btn-primary" style="color: white;">Главная</a>
-                    </div>
+<div class="form-predict">
+    <form method="POST" action="{{ url_for('predict_form') }}">
+        {% for resp in response %}
+            <div class="row">
+
+                <input class="name_dish-predict" placeholder="{{ resp.name_dish }}" required type="text" disabled="True">
+                <input class="product_description-predict" placeholder="{{ resp.product_description }}" required type="text" disabled="True">
+                
+                <button class="request disabled" type="submit" disabled="True">
+                    Прогноз
+                </button>
+                <div class="category-predict">
+                    {{ resp.prediction }}
                 </div>
             </div>
+        {% endfor %}
+
+        <div class="row">
+            
+            {{ form.hidden_tag() }}
+            {% for field in form if field.widget.input_type != 'hidden' %}
+                    {{ field(class=field.short_name, placeholder=field.label.text, value="") }}
+            {% endfor %}
+            
+            <button class="request" type="submit">
+                Прогноз
+            </button>
+            <div class="category">
+                <input class="category" placeholder="Категория" required type="text" value disabled="True">
+            </div>
+        </div>
+    </form>
+</div>
+    <div class="back">
+        <div>
+            <button type="submit" class="back-button">
+                <a href="{{ url_for('predict_form') }}">Назад</a>
+            </button>
+        </div>
+        <div>
+            <button type="submit" class="main-button">
+                <a href="{{ url_for('index') }}">Главная</a>
+            </button>
         </div>
     </div>
     {% else %}
@@ -48,4 +75,8 @@
     </div>
     </div>
     {% endif %}
+{% endblock %}
+
+{% block how_this_works %}
+
 {% endblock %}

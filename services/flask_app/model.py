@@ -22,4 +22,4 @@ def load_files_from_s3():
 
 def get_model():
     load_files_from_s3()
-    return lambda x: 'This is test food category'
+    return lambda x: 'Test'

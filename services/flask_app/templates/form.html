@@ -1,37 +1,41 @@
 {% extends "index.html" %}
 {% block title %}Название и описание блюда{% endblock %}
+{% block header_present %}Присоединитесь к надежному партнеру по доставке еды{% endblock %}
+{% block header_present_buttom %}
+    <a href="https://www.delivery-club.ru/partners?step=1">
+      <div>
+        Подключиться
+      </div>
+    </a>
+{% endblock %}
 {% block content %}
-<h1 class="text-center">Информация о блюде</h1>
-<br>
-<div class="container" style="width: 70%;">
+<div class="form-predict">
     <form method="POST" action="{{ url_for('predict_form') }}">
-        {{ form.hidden_tag() }}
-        {% for field in form if field.widget.input_type != 'hidden' %}
-        <div class="row justify-content-center">
-            <div class="col" style="text-align: right;">
-                {{ field.label() }}
+        <div class="row">
+            
+            {{ form.hidden_tag() }}
+            {% for field in form if field.widget.input_type != 'hidden' %}
+                    {{ field(class=field.short_name, placeholder=field.label.text) }}
+            {% endfor %}
+            
+            <button class="request" type="submit">
+                Прогноз
+            </button>
+            <div class="category">
+                <input class="category" placeholder="Категория" required type="text" value disabled="True">
             </div>
-            <div class="col">
-                {{ field(class="form-control") }}
-            </div>
-            <div class="col">
-                {% if field.errors %}
-                    {% for error in field.errors %}
-                      <span style="color: red;">[{{error}}]</span>
-                    {% endfor %}
-                {% endif %}
-
-            </div>
-        </div>
-        {% endfor %}
-        <div class="text-center">
-            <button type="submit" class="btn btn-info">Прогноз</button>
         </div>
     </form>
-    <div class="text-center">
-        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
-            <a href="{{ url_for('index') }}" style="color: white;">Главная</a>
-        </button>
-    </div>
 </div>
+    <div class="back">
+        <div>
+            <button type="submit" class="back-button">
+                <a href="{{ url_for('index') }}" style="color: white;">Главная</a>
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block how_this_works %}
+
 {% endblock %}

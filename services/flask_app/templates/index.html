@@ -3,37 +3,52 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-
+    <link rel="stylesheet" href="{{url_for('static', filename = 'css/style.css')}}">
     <title>{% block title %}Главная страница{% endblock %}</title>
-
-    <style type="text/css">
-      div{
-      margin-top: 2px;
-      }
-      header {
-              background: url({{url_for('static', filename = 'images/shapka.png')}}) no-repeat center center;
-              height: 300px;
-              }
-    </style>
-
   </head>
-  <header>
-<!--    <img src="/images/shapka.jpg">-->
-  </header>
   <body>
-  <main role="main" class="container">
-    <div class="starter-template py-5 px-3">
-    {% block content %}
-      <h2 class="text-center">Определи категорию блюда по описанию!</h2>
-      <br>
-      <div class="text-center">
-        <p></p>
-        <a href="{{ url_for('predict_form') }}" class="btn btn-primary">Попробовать</a>
+  <main role="main">
+      <div class="header-line">
+        <a href="https://www.delivery-club.ru/partners-login/">
+          <div class="logo">
+          </div>
+        </a>
+        <div class="inter-partners">
+          <a href="https://www.delivery-club.ru/partners-login/">
+            <div>
+              Вход для партнеров
+            </div>
+          </a>
+        </div>
       </div>
-    {% endblock %}
+        <div class="header-label">
+          <div class="header-image">
+          </div>
+          <div class="header-welcome">
+            <div class="header-present">
+              {% block header_present %}
+                Узнайте категорию блюда и привлеките новых клиентов
+              {% endblock %}
+            </div>
+            <div class="header-present-buttom">
+              {% block header_present_buttom %}
+                <a href="{{url_for('predict_form')}}">
+                  <div>
+                    Попробовать
+                  </div>
+                </a>
+              {% endblock %}
+            </div>
+          </div>
+        </div>
     </div>
+    <div class="content">
+      {% block content %}
+      {% endblock %}
+    </div>
+    {% block how_this_works %}
+
+    {% endblock %}
 
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
