@@ -13,22 +13,50 @@
     {% if not response.error %}
 <div class="form-predict">
     <form method="POST" action="{{ url_for('predict_form') }}">
-        {% for resp in response %}
-            <div class="row">
-
-                <input class="name_dish-predict" placeholder="{{ resp.name_dish }}" required type="text" disabled="True">
-                <input class="product_description-predict" placeholder="{{ resp.product_description }}" required type="text" disabled="True">
-                
-                <button class="request disabled" type="submit" disabled="True">
-                    Прогноз
-                </button>
-                <div class="category-predict">
-                    {{ resp.prediction }}
-                </div>
-            </div>
-        {% endfor %}
-
         <div class="row">
+            <div class="name_dish label">
+                Название блюда
+            </div>
+            <div class="product_description label">
+                Описание блюда
+            </div>
+            <div class="price label">
+                Цена
+            </div>
+            <div class="request label">
+                
+            </div>
+            <div class="category label">
+                Категория
+            </div>
+        </div>
+        <div class="row border_row">
+            <div class="name_dish predict">
+                {% for word_name in response.name_dish.current_name %}
+                    <div class="word {{ response.word_importance[word_name].class }}">
+                        {{ word_name }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="product_description predict">
+                {% for word_description in response.product_description.current_description %}
+                    <div class="word {{ response.word_importance[word_description].class }}">
+                        {{ word_description }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="price predict">
+                {{ response.price }}
+            </div>
+            <div class="request label">
+                
+            </div>
+            <div class="category predict">
+                {{ response.prediction }}
+            </div>
+        </div>
+
+ <!--        <div class="row">
             
             {{ form.hidden_tag() }}
             {% for field in form if field.widget.input_type != 'hidden' %}
@@ -41,19 +69,23 @@
             <div class="category">
                 <input class="category" placeholder="Категория" required type="text" value disabled="True">
             </div>
-        </div>
+        </div> -->
     </form>
-</div>
-    <div class="back">
-        <div>
-            <button type="submit" class="back-button">
-                <a href="{{ url_for('predict_form') }}">Назад</a>
-            </button>
-        </div>
-        <div>
-            <button type="submit" class="main-button">
-                <a href="{{ url_for('index') }}">Главная</a>
-            </button>
+        <div class="back">
+            <div>
+                <a href="{{ url_for('predict_form') }}">
+                    <button type="submit" class="back-button">
+                        Назад
+                    </button>
+                </a>    
+            </div>
+            <div>
+                <a href="{{ url_for('index') }}">
+                    <button type="submit" class="main-button">
+                        Главная
+                    </button>   
+                </a>    
+            </div>
         </div>
     </div>
     {% else %}

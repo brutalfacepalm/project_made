@@ -3,3 +3,6 @@ gitToken
 git_command.sh
 /services/flask_app/access_s3
 /.idea/*
+/services/flask/__pycache__/*
+/prodmodel/__pycache__/*
+
