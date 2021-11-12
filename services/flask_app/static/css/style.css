@@ -128,56 +128,75 @@ main {
     grid-template-rows: repeat(1, 1fr);
     grid-template-columns: repeat(128, 1fr);
     column-gap: 5px;
-    max-width: 1024px;
-    padding: 0 30px;
-    height: 40px;
+    width: 75vw;
+    padding: 5px 30px;
+    height: auto;
+	min-height: 40px;
 }
 .row *{
-	height: 100%;
+	height: auto;
+}
+.border_row {
+    border: 10px solid rgba(255, 255, 255, 0.8);
+    border-radius: 5px;
+	box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
+}
+.border_row, .border_row>div {
+	background-color: #f6f6f6;
 }
 .name_dish {
-	grid-column: 1 / 20;
+	grid-column: 1 / 30;
 	grid-row: 1 / -2;
-    box-sizing: border-box;
-    border-width: 0.1px;
-    border-color: #C1CACA;
+	margin-left: 5px;
+	margin-right: 5px;
+    border-width: 0px;
     border-radius: 3px;
-	box-shadow: inset 0px 0px 5px rgba(0,0,0,0.2);
-
+	box-shadow: 0px 0px 5px rgba(192, 192, 192, 0.5);
+	font-family: 'Roboto', -apple-system, sans-serif;
+	font-size: 15px;
 }
 .product_description {
-	grid-column: 20 / 73;
+	grid-column: 30 / 83;
 	grid-row: 1 / -2;
     box-sizing: border-box;
-    border-width: 0.1px;
-    border-color: #C1CACA;
+    border-width: 0px;
     border-radius: 3px;
-	box-shadow: inset 0px 0px 5px rgba(0,0,0,0.2);
+	box-shadow: 0px 0px 5px rgba(192, 192, 192, 0.5);
+	font-family: 'Roboto', -apple-system, sans-serif;
+	font-size: 15px;
 
+}
+.price {
+	grid-column: 83 / 98;
+	grid-row: 1 / -2;
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 3px;
+	box-shadow: 0px 0px 5px rgba(192, 192, 192, 0.5);
+	font-family: 'Roboto', -apple-system, sans-serif;
+	font-size: 15px;
+
+}
+.name_dish:focus, .product_description:focus, .price:focus {
+    outline: none;
+	font-family: 'Roboto', -apple-system, sans-serif;
+	font-size: 15px;
 }
 .product_description::placeholder,
 .name_dish::placeholder,
-.category::placeholder {
+.price::placeholder{
 	text-align: center;
 	font-family: 'Roboto', -apple-system, sans-serif;
 	font-size: 15px;
 	opacity: 0.5;
 }
-.product_description-predict::placeholder,
-.name_dish-predict::placeholder,
-.category-predict::placeholder {
-	text-align: center;
-	font-family: 'Roboto', -apple-system, sans-serif;
-	font-size: 15px;
-}
-
 .request {
 	width: 100%;
-	grid-column: 73 / 88;
+	grid-column: 98 / 113;
 	grid-row: 1 / -2;
     box-sizing: border-box;
     border-width: 0px;
-    border-radius: 3px;
+    border-radius: 2px;
     background: #0ec645;
     cursor: pointer;
 	font-family: 'Roboto', -apple-system, sans-serif;
@@ -188,18 +207,36 @@ main {
 	box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
 }
 .category {
-	grid-column: 88 / 113;
+	grid-column: 113 / 129;
 	grid-row: 1 / -2;
     box-sizing: border-box;
     border-width: 0px;
-    border-radius: 3px;
+    border-radius: 2px;
 	background-color: #f6f6f6;
 	text-align: center;
 	font-family: 'Roboto', -apple-system, sans-serif;
 	font-size: 15px;
 }
+.label {
+	display: grid;
+	justify-content: center;
+	align-content: end;
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 0px;
+	box-shadow: 0px 0px 0px rgba(0,0,0,0.3);
+	background-color: #f6f6f6;
+	font-family: 'Roboto', -apple-system, sans-serif;
+	font-size: 15px;
+	padding-bottom: 5px;
+	opacity: 0.5;
+}
+.label:hover {
+	box-shadow: 0px 0px 0px rgba(0,0,0,0.3);
+    cursor: default;
+}
 .category-predict {
-	grid-column: 88 / 113;
+	grid-column: 98 / 113;
 	grid-row: 1 / -2;
     box-sizing: border-box;
     border-width: 0px;
@@ -210,28 +247,20 @@ main {
 	display: grid;
 	align-content: center;
 }
-.name_dish-predict {
-	grid-column: 1 / 20;
-	grid-row: 1 / -2;
+.predict {
+	display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
     border-width: 0px;
-
+    border-radius: 0px;
+	box-shadow: 0px 0px 0px rgba(0,0,0,0.3);
+	min-height: auto;
 }
-.product_description-predict {
-	grid-column: 20 / 73;
-	grid-row: 1 / -2;
-    border-width: 0px;
-
-}
-.product_description-predict::placeholder,
-.name_dish-predict::placeholder {
-	text-align: center;
-	font-family: 'Roboto', -apple-system, sans-serif;
-	font-size: 15px;
-}
-.disabled {
-	background-color: #535a57;
-    cursor: default;
-
+.word {
+	padding-left: 5px;
+	padding-right: 5px;
 }
 .edit {
 	grid-column: 113 / 121;
@@ -247,7 +276,7 @@ main {
 	justify-content: start;
     grid-template-rows: repeat(1, 1fr);
     grid-template-columns: repeat(2, 1fr);
-	padding:0 50px;
+	padding:10px 30px;
 	background-color: #f6f6f6;
     max-width: 250px;
 }
@@ -274,13 +303,96 @@ main {
     height: 40px;
     width: 100%;
 }
-.back-button a, .main-button a {
+.back-button, .main-button {
 	font-family: 'Roboto', -apple-system, sans-serif;
 	font-size: 15px;
 	color: white;
 	text-decoration: none;
 }
 
+.high_positive {
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 10px;
+    background: rgba(0, 205, 0, 0.8);
+}
+.high_positive:hover {
+	box-shadow: 0px 0px 5px rgba(0, 185, 0, 0.4);
+	cursor: pointer;
+}
+.mid_positive {
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 10px;
+    background: rgba(0, 185, 0, 0.5);
+}
+.mid_positive:hover {
+	box-shadow: 0px 0px 5px rgba(0, 165, 0, 0.25);
+	cursor: pointer;
+}
+.low_positive {
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 10px;
+    background: rgba(0, 165, 0, 0.2);
+}
+.low_positive:hover {
+	box-shadow: 0px 0px 5px rgba(0, 145, 0, 0.1);
+	cursor: pointer;
+}
+
+.high_negative {
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 10px;
+    background: rgba(205, 0, 0, 0.8);
+}
+.high_negative:hover {
+	box-shadow: 0px 0px 5px rgba(185, 0, 0, 0.4);
+	cursor: pointer;
+}
+.mid_negative {
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 10px;
+    background: rgba(185, 0, 0, 0.5);
+}
+.mid_negative:hover {
+	box-shadow: 0px 0px 5px rgba(165, 0, 0, 0.25);
+	cursor: pointer;
+}
+.low_negative {
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 10px;
+    background: rgba(165, 0, 0, 0.2);
+}
+.low_negative:hover {
+	box-shadow: 0px 0px 5px rgba(145, 0, 0, 0.1);
+	cursor: pointer;
+}
+.normal {
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 10px;
+    background: rgba(105, 105, 105, 0.2);
+}
+.normal:hover {
+	box-shadow: 0px 0px 5px rgba(128, 128, 128, 0.1);
+	cursor: pointer;
+}
+
+.another_predict {
+    box-sizing: border-box;
+    border-width: 0px;
+    border-radius: 10px;
+    background: rgba(105, 105, 105, 0.2);
+    text-decoration: line-through;
+}
+.another_predict:hover {
+	box-shadow: 0px 0px 5px rgba(128, 128, 128, 0.1);
+	cursor: pointer;
+}
 
 
 

@@ -14,10 +14,10 @@ RUN apt-get update && \
 
 RUN pip install --upgrade pip
 RUN pip install flake8==3.9.1
-COPY . /usr/src/app/
+COPY ./flask_app /usr/src/app/
 # RUN flake8 --ignore=E501,F401 .
 
-COPY ./requirements.txt .
+COPY ./flask_app/requirements.txt .
 RUN apt-get update -y && apt-get install -y gcc
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
@@ -34,6 +34,7 @@ RUN addgroup --system app && adduser --system --group app
 
 ENV HOME=/home/app
 ENV APP_HOME=/home/app/flask_app
+ENV PRODMODEL=/home/app/prodmodel
 RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
@@ -45,9 +46,11 @@ RUN pip install --no-cache /wheels/*
 
 # COPY ./entrypoint.prod.sh $APP_HOME
 
-COPY . $APP_HOME
+COPY ./flask_app $APP_HOME
+COPY ./prodmodel $PRODMODEL
 
-RUN chown -R app:app $APP_HOME
+RUN chown -R app:app $HOME
+RUN chmod -R 777 /home/app
 
 USER app
 

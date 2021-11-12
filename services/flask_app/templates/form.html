@@ -12,26 +12,42 @@
 <div class="form-predict">
     <form method="POST" action="{{ url_for('predict_form') }}">
         <div class="row">
+            <div class="name_dish label">
+                Название блюда
+            </div>
+            <div class="product_description label">
+                Описание блюда
+            </div>
+            <div class="price label">
+                Цена
+            </div>
+            <div class="request label">
+                
+            </div>
+            <div class="category label">
+                Категория
+            </div>
+        </div>
+        <div class="row">
             
             {{ form.hidden_tag() }}
             {% for field in form if field.widget.input_type != 'hidden' %}
-                    {{ field(class=field.short_name, placeholder=field.label.text) }}
+                    {{ field(class=field.short_name) }}
             {% endfor %}
             
             <button class="request" type="submit">
                 Прогноз
             </button>
-            <div class="category">
-                <input class="category" placeholder="Категория" required type="text" value disabled="True">
-            </div>
         </div>
     </form>
-</div>
-    <div class="back">
-        <div>
-            <button type="submit" class="back-button">
-                <a href="{{ url_for('index') }}" style="color: white;">Главная</a>
-            </button>
+        <div class="back">
+            <div>
+                <a href="{{ url_for('index') }}" style="color: white;">
+                    <button type="submit" class="back-button">
+                        Главная
+                    </button>
+                </a>
+            </div>
         </div>
     </div>
 {% endblock %}

@@ -2,10 +2,12 @@ version: '3.7'
 
 services:
   flask:
-    build:
-      context: ./services/flask_app
-      dockerfile: Dockerfile
-    command: gunicorn --bind 0.0.0.0:5000 app:app
+    build: 
+      context: ./services/
+      dockerfile: ./flask_app/Dockerfile
+    platform: linux/amd64
+    #command: gunicorn --bind 0.0.0.0:5000 app:app
+    command: python3 app.py
     volumes:
       - static:/home/app/flask_app/static
     expose:
@@ -21,5 +23,12 @@ services:
       - "80:80"
     depends_on:
       - flask
+  mlflow:
+    build:
+      context: ./services/mlflow
+    ports:
+        - "4040:4040"
+    command: mlflow server --backend-store-uri ./mlflow --host 0.0.0.0 --port 4040
+
 volumes:
   static:
