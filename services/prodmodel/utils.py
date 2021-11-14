@@ -4,7 +4,7 @@ import sys
 from boto3 import resource
 
 def load_files_from_s3(s3_path, path, filepath):
-    with open("../flask_app/access_s3") as f:
+    with open("access_s3") as f:
         access = f.read().strip().split('\n')
 
         ACCESS_KEY = access[0]

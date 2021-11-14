@@ -5,4 +5,4 @@ git_command.sh
 /.idea/*
 /services/flask/__pycache__/*
 /prodmodel/__pycache__/*
-
+.env

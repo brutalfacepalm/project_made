@@ -40,9 +40,11 @@
             </div>
             <div class="product_description predict">
                 {% for word_description in response.product_description.current_description %}
-                    <div class="word {{ response.word_importance[word_description].class }}">
-                        {{ word_description }}
-                    </div>
+                    {% if word_description != '' %}    
+                        <div class="word {{ response.word_importance[word_description].class }}">
+                            {{ word_description }}
+                        </div>
+                    {% endif %}
                 {% endfor %}
             </div>
             <div class="price predict">

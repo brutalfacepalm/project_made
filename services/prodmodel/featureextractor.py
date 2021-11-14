@@ -18,8 +18,21 @@ class FeatureExtractor:
             return pickle.load(w_t_i_file) 
 
     def get_features(self, data):
+        # data_x_idx = []
         data['X'] = data['name_dish'] + ' ' + data['product_description']
         data['X_len'] = data['X'].apply(lambda x: len([w for w in x.split(' ') if w != '']))
+        # for row in data['X'].values:
+        #     x_idx = []
+        #     for word in row.split(' '):
+        #         if word != '':
+        #             try:
+        #                 x_idx.append(self.word_to_idx[word])
+        #             except Exception as e:
+        #                 return {'error': word}
+        #     data_x_idx.append(x_idx)
+
+
+        # data['X_idx'] = data_x_idx
         data['X_idx'] = data['X'].apply(lambda x: [self.word_to_idx[word] for word in x.split(' ') if word != ''])
 
         return [torch.LongTensor(data['X_idx']).to(device), torch.LongTensor([data['X_len'].values]).to(device)]

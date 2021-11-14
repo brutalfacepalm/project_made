@@ -29,17 +29,38 @@
             </div>
         </div>
         <div class="row">
-            
-            {{ form.hidden_tag() }}
-            {% for field in form if field.widget.input_type != 'hidden' %}
+            {% if response %}
+                {{ form.hidden_tag() }}
+                {% for field in form if field.widget.input_type != 'hidden' %}
+                    {{ field(class=field.short_name, value=response[field.short_name]) }}
+                {% endfor %}
+            {% else %}
+                {{ form.hidden_tag() }}
+                {% for field in form if field.widget.input_type != 'hidden' %}
                     {{ field(class=field.short_name) }}
-            {% endfor %}
-            
+                {% endfor %}
+            {% endif %}
             <button class="request" type="submit">
                 Прогноз
             </button>
         </div>
     </form>
+    {% if response %}
+        <div class="err">
+            <div>
+                Ошибка при обработке слова {{ response.error }}. Возможно, в слове опечатка или оно написано латиницей.
+            </div>
+        </div>
+    {% endif %}     
+    {% for field, errors in form.errors.items() %}
+        {% if errors %}
+            <div class="err">
+                <div>
+                    {{ errors[0] }}
+                </div>
+            </div>
+        {% endif %}   
+    {% endfor %}
         <div class="back">
             <div>
                 <a href="{{ url_for('index') }}" style="color: white;">
