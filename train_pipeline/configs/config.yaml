@@ -6,9 +6,15 @@ defaults:
   - override hydra/hydra_logging: colorlog
   - override hydra/job_logging: colorlog
 
+
+mlflow:
+  tracking_uri: http://madeclassifirefoodtype.ru:4040/
+  experiment: naive_bayes
+
+
 load_data:
-  in_path: /data/menu_df_for_made.pkl
-  out_path: /data/load_data.csv
+  in_path: data/menu_df_for_made.pkl
+  out_path: data/load_data.csv
 
 test_split:
   test_size: 0.1
@@ -22,10 +28,10 @@ valid_split:
 preprocess:
   _target_: preprocess.transform_pipeline.PreprocessTransformer
 
-  to_spell_path: /project_made/preprocess/to_spell.npy
+  to_spell_path: project_made/preprocess/to_spell.npy
   max_len: 10000
 
 model:
-  _target_: model.naive_bayes.TfidfMultinomialNB
+  _target_: model.naive_bayes.TfidfComplementNB
 
 
