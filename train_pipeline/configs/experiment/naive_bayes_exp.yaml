@@ -1,0 +1,11 @@
+
+# @package _global_
+
+# to execute this experiment run:
+# python src/train.py experiment=naive_bayes_exp.yaml
+
+defaults:
+  - override /model: naive_bayes.yaml
+
+mlflow:
+  experiment_name: "naive_bayes"

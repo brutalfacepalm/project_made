@@ -1,0 +1,15 @@
+# @package _global_
+
+# to execute this experiment run:
+# python src/train.py experiment=log_reg_exp.yaml
+
+# defaults:
+#   - override /model: null
+
+model:
+  _target_: model.log_reg.TfIdf_Price_LogReg
+  C: 100
+
+
+mlflow:
+  experiment_name: "log_reg"

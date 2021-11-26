@@ -10,18 +10,23 @@ from preprocess.text_process import (SimpleTokenizer,
 
 
 class TextUnionTransform(BaseEstimator, TransformerMixin):
-    def __init__(self, i_cols):
-        self.i_cols = i_cols
+    def __init__(self, cols):
+        self.cols = cols
 
     def fit(self, X: pd.DataFrame, y: pd.Series = None):
         return self
 
     def transform(self, X: pd.DataFrame):
-        X = pd.DataFrame(X)
-        out = X.iloc[:, self.i_cols[0]]
-        for i_col in self.i_cols[1:]:
-            out += ' ' + X.iloc[:, i_col]
+        out = X[self.cols[0]]
+        for col in self.cols:
+            out += ' ' + X[col]
         return out
+
+        # X = pd.DataFrame(X)
+        # out = X.iloc[:, self.i_cols[0]]
+        # for i_col in self.i_cols[1:]:
+        #     out += ' ' + X.iloc[:, i_col]
+        # return out
 
 
 class SimpleTokenizerTransformer(BaseEstimator, TransformerMixin):

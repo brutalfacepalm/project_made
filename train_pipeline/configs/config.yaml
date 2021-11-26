@@ -2,14 +2,21 @@
 # @package _global_
 
 defaults:
+  - _self_ 
+  - model: naive_bayes.yaml
+  - experiment: null
+
+
   # enable color logging
   - override hydra/hydra_logging: colorlog
   - override hydra/job_logging: colorlog
 
 
 mlflow:
+  #tracking_uri: file://project_made/train_pipeline/mlruns
   tracking_uri: http://madeclassifirefoodtype.ru:4040/
-  experiment: naive_bayes
+  experiment_name: "default"
+  
 
 
 load_data:
@@ -31,7 +38,6 @@ preprocess:
   to_spell_path: project_made/preprocess/to_spell.npy
   max_len: 10000
 
-model:
-  _target_: model.naive_bayes.TfidfComplementNB
+
 
 

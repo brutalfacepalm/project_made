@@ -31,7 +31,9 @@ def train(config: DictConfig) -> Optional[float]:
     """
 
     mlflow.set_tracking_uri(config.mlflow.tracking_uri)
-    mlflow.set_experiment(config.mlflow.experiment)
+    mlflow.set_experiment(config.mlflow.experiment_name)
+    logger.debug(f'experiment_name: {config.mlflow.experiment_name}')
+    logger.debug(f'mlflow_uri: {config.mlflow.tracking_uri}')
 
     # os.environ["AWS_ACCESS_KEY_ID"] = "..."
     # os.environ["AWS_SECRET_ACCESS_KEY"] = "..."
@@ -68,8 +70,9 @@ def train(config: DictConfig) -> Optional[float]:
         # предобработка данных   
         preprosess = hydra.utils.instantiate(config.preprocess)
         with timebudget("preprocess transform"):
-            X_train = pd.DataFrame(preprosess.fit_transform(X_train), 
-                                columns=X_train.columns)
+            # X_train = pd.DataFrame(preprosess.fit_transform(X_train), 
+            #                     columns=X_train.columns)
+            X_train = preprosess.fit_transform(X_train)
 
         # словарь обучения
         name_words = word_counter(X_train['name_dish'])

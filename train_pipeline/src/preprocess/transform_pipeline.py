@@ -6,12 +6,37 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+
 from preprocess.text_process import CorrectSpelling
-from transform.text_transforms import (SimpleTokenizerTransformer,
+from transform.text_transforms import (TextUnionTransform,
+                                       SimpleTokenizerTransformer,
                                        CorrectSpellingTransformer,
                                        MystemLemmatizerTransformer,
                                        KeepCommonTransformer,
                                       )
+
+def TfIdfColumnTransformer(columns=["name_dish", "product_description"],
+                           remainder="passthrough"):
+    return ColumnTransformer([
+            ("text_tf_idf",
+             Pipeline([
+                (  "text_union",
+                    TextUnionTransform(columns),
+                ),
+                (  "count", 
+                    CountVectorizer()
+                ),
+                (  "tf_idf",
+                    TfidfTransformer(),
+                ),
+             ]),
+             columns,
+            ),
+        ],
+        remainder=remainder,
+        )
 
 
 class PriceOutliersTransformer(BaseEstimator, TransformerMixin):
@@ -29,6 +54,22 @@ class PriceOutliersTransformer(BaseEstimator, TransformerMixin):
         return X.apply(lambda col: col.apply(PriceOutliersTransformer.price_filter))
 
 
+class TransformerToDF:
+    def __init__(self, transformer, columns):
+        self.transformer = transformer
+        self.columns = columns
+
+    def fit(self,  *args, **kwargs):
+        return self.transformer.fit(*args, **kwargs)
+
+    def fit_transform(self,  *args, **kwargs):
+        return pd.DataFrame(self.transformer.fit_transform(*args, **kwargs),
+                            columns=self.columns)
+
+    def transform(self,  *args, **kwargs):
+        return pd.DataFrame(self.transformer.transform(*args, **kwargs),
+                            columns=self.columns)
+
 
 def PreprocessTransformer(to_spell_path, max_len=10000, threshold_cnt=10, unk_token=' ') -> ColumnTransformer:
 
@@ -36,7 +77,7 @@ def PreprocessTransformer(to_spell_path, max_len=10000, threshold_cnt=10, unk_to
     corrector = CorrectSpelling(word_to_correct)
 
 
-    return ColumnTransformer(
+    transformer = ColumnTransformer(
         [
             (  "text_process_pipeline",
                 Pipeline([
@@ -61,13 +102,15 @@ def PreprocessTransformer(to_spell_path, max_len=10000, threshold_cnt=10, unk_to
                     (  "filter_outliers",
                         PriceOutliersTransformer(),
                     ),
-                    (  "standard_scaler",
-                        StandardScaler(),
-                    ),
+                    # (  "standard_scaler",
+                    #     StandardScaler(),
+                    # ),
                 ]),
                 ["price"],
             ),
         ],
-        remainder="passthrough",
+        #remainder="passthrough",
     )
+
+    return TransformerToDF(transformer, ["name_dish", "product_description", "price"])
 
