@@ -11,68 +11,92 @@
 {% endblock %}
 {% block content %}
     {% if not response.error %}
-<div class="form-predict">
-    <form method="POST" action="{{ url_for('predict_form') }}">
-        <div class="row">
-            <div class="name_dish label">
-                Название блюда
-            </div>
-            <div class="product_description label">
-                Описание блюда
-            </div>
-            <div class="price label">
-                Цена
-            </div>
-            <div class="request label">
-                
-            </div>
-            <div class="category label">
-                Категория
-            </div>
-        </div>
-        <div class="row border_row">
-            <div class="name_dish predict">
-                {% for word_name in response.name_dish.current_name %}
-                    <div class="word {{ response.word_importance[word_name].class }}">
-                        {{ word_name }}
+        <div class="form-predict">
+            <form method="POST" action="{{ url_for('predict_form') }}">
+                <div class="row">
+                    <div class="name_dish label">
+                        Название блюда
+                    </div>
+                    <div class="product_description label">
+                        Описание блюда
+                    </div>
+                    <div class="price label">
+                        Цена
+                    </div>
+                    <div class="request label">
+
+                    </div>
+                    <div class="categories label">
+                        Категория
+                    </div>
+                </div>
+                {% for result in response %}
+<!--                {{ form.hidden_tag() }}-->
+                    <div class="row border_row">
+                        <div class="name_dish predict">
+                            {% if result.name_dish.current_name|length > 1 %}
+                                {% for word_name in result.name_dish.current_name %}
+                                    <button type="submit" class="word {{ result.word_importance[word_name].class }}" name="name_dish" value="{{ {'name_dish': ' '.join(result.name_dish.current_name), 'product_description': ' '.join(result.product_description.current_description), 'price': result.price, 'deleted': word_name} }}">
+    <!--                                <button type="submit" class="word {{ result.word_importance[word_name].class }}">-->
+                                        {{ word_name }}
+                                    </button>
+                                {% endfor %}
+                            {% else %}
+                                {% for word_name in result.name_dish.current_name %}
+                                    <button type="submit" disabled class="word {{ result.word_importance[word_name].class }}" name="name_dish" value="{{ {'name_dish': ' '.join(result.name_dish.current_name), 'product_description': ' '.join(result.product_description.current_description), 'price': result.price, 'deleted': word_name} }}">
+    <!--                                <button type="submit" class="word {{ result.word_importance[word_name].class }}">-->
+                                        {{ word_name }}
+                                    </button>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="product_description predict">
+                            {% for word_description in result.product_description.current_description %}
+                                {% if word_description != '' %}
+                                    <button type="submit" class="word {{ result.word_importance[word_description].class }}" name="product_description"  value="{{ {'name_dish': ' '.join(result.name_dish.current_name), 'product_description': ' '.join(result.product_description.current_description), 'price': result.price, 'deleted': word_description} }}">
+<!--                                    <button type="submit" class="word {{ result.word_importance[word_description].class }}">-->
+                                        {{ word_description }}
+                                    </button>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="price predict">
+                            {{ result.price }}
+                        </div>
+                        <div class="request label">
+
+                        </div>
+                        <div class="categories predict">
+                            {% for predict in result.predictions %}
+                                {% if predict==result.prediction_primary %}
+                                    <div class="category main">
+                                        {{ predict }}: {{ result.predictions[predict] }}%
+                                    </div>
+                                {% else %}
+                                    <div class="category second">
+                                        {{ predict }}: {{ result.predictions[predict] }}%
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
                     </div>
                 {% endfor %}
-            </div>
-            <div class="product_description predict">
-                {% for word_description in response.product_description.current_description %}
-                    {% if word_description != '' %}    
-                        <div class="word {{ response.word_importance[word_description].class }}">
-                            {{ word_description }}
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-            <div class="price predict">
-                {{ response.price }}
-            </div>
-            <div class="request label">
-                
-            </div>
-            <div class="category predict">
-                {{ response.prediction }}
-            </div>
-        </div>
 
- <!--        <div class="row">
-            
-            {{ form.hidden_tag() }}
-            {% for field in form if field.widget.input_type != 'hidden' %}
-                    {{ field(class=field.short_name, placeholder=field.label.text, value="") }}
-            {% endfor %}
-            
-            <button class="request" type="submit">
-                Прогноз
-            </button>
-            <div class="category">
-                <input class="category" placeholder="Категория" required type="text" value disabled="True">
-            </div>
-        </div> -->
-    </form>
+         <!--        <div class="row">
+
+                    {{ form.hidden_tag() }}
+                    {% for field in form if field.widget.input_type != 'hidden' %}
+                            {{ field(class=field.short_name, placeholder=field.label.text, value="") }}
+                    {% endfor %}
+
+                    <button class="request" type="submit">
+                        Прогноз
+                    </button>
+                    <div class="category">
+                        <input class="category" placeholder="Категория" required type="text" value disabled="True">
+                    </div>
+                </div> -->
+            </form>
         <div class="back">
             <div>
                 <a href="{{ url_for('predict_form') }}">
