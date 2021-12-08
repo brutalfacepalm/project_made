@@ -11,4 +11,6 @@ RUN apt-get update \
     && pip install --no-cache-dir psycopg2 \
         mlflow
 
+RUN pip install boto3==1.19.2
+
 EXPOSE 4040

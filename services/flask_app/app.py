@@ -9,9 +9,11 @@ from flask_wtf import FlaskForm
 from requests.exceptions import ConnectionError
 from wtforms import widgets, IntegerField, SelectField, StringField, Field
 from wtforms.validators import DataRequired, Regexp, Optional, ValidationError
+from werkzeug.datastructures import ImmutableMultiDict
 
 import pandas as pd
 import numpy as np
+from scipy.special import softmax
 from pymystem3 import Mystem
 
 PATHFORMODEL = '../prodmodel'
@@ -92,14 +94,16 @@ class Predictions:
         self.feature_extractor = feature_extractor
         self.model = model
         self.decode_predict = decode_predict
-        # self.results = []
+        self.results = []
+        self.last_response = {}
+        self.form = None
 
     def predict(self, insurance_data):
         name_dish = insurance_data['name_dish'].strip()
         product_description = insurance_data['product_description'].strip()
         price = insurance_data['price'].strip()
         data = pd.DataFrame(data=[[name_dish, product_description]],
-                           columns=['name_dish', 'product_description'])
+                            columns=['name_dish', 'product_description'])
 
         clean_data = self.cleaner.clean_data(data)
         logger.info('Data was cleaned')
@@ -110,6 +114,11 @@ class Predictions:
         predict = self.model(*data_for_predict).detach().numpy()
         logger.info('Predict complete')
         predict_label = np.argmax(predict)
+
+        top_5_labels = np.argsort(predict)[0][-5:][::-1]
+        top_5_cat = [self.decode_predict.decode_answer(label) for label in top_5_labels]
+        top_5_proba = list(map(lambda x: round(x*100, 2), softmax(predict)[0][top_5_labels]))
+        top_5_prediction = dict(zip(top_5_cat, top_5_proba))
 
         predict_proba = predict[:, predict_label]
 
@@ -206,32 +215,40 @@ class Predictions:
         result = {'name_dish': {'current_name': name_dish.split(' ')},
                   'product_description':  {'current_description': product_description.split(' ')},
                   'price': price,
-                  'prediction': cat_prediction,
+                  'prediction_primary': cat_prediction,
+                  'predictions': top_5_prediction,
                   'word_importance': word_importance}
         
-        # if result not in self.results:
-        #     self.results.append(result)
+        if result not in self.results:
+            self.results.append(result)
 
-        return json.dumps(result)
+        return json.dumps(self.results)
 
 
 @app.route("/")
 def index():
     logger.info('Someone connect to service')
-    # predictions.results = []
+    # results = []
+    predictions.form = ClientDataForm(ImmutableMultiDict([]))
+    predictions.results = []
+    predictions.last_response = {}
     return render_template('index.html')
 
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict_form():
     logger.info('Load page with form of prediction')
-    form = ClientDataForm(request.form)
-    data = {}    
-    # while True:
-    if request.method == 'POST' and form.validate_on_submit():
+    form = ClientDataForm(request.form) if request.form.get('csrf_token') else predictions.form
+    predictions.form = form
+    data = {}
+    if request.method == 'POST' and request.form.get('csrf_token') and form.validate_on_submit():
         data['name_dish'] = request.form.get('name_dish')
         data['product_description'] = request.form.get('product_description')
         data['price'] = request.form.get('price')
+        predictions.results = []
+        predictions.last_response = {'name_dish': request.form.get('name_dish'),
+                    'product_description': request.form.get('product_description'),
+                    'price': request.form.get('price')}
         logger.info('Data for prediction received')
         try:
             logger.info('Try to predict')
@@ -245,13 +262,28 @@ def predict_form():
                       'price': data['price'],
                       'error': str(ke)
                       }
-            # response = json.dumps(result)
             return render_template('form.html', response=response, form=form)
         
         logger.info('Load predicted.html')
         return render_template('predicted.html', response=response, form=form)
-    logger.info('Load form.html') 
-    return render_template('form.html', form=form)
+    logger.info('Load form.html')
+    if not request.form:
+        return render_template('form.html', response=predictions.last_response, form=form)
+    else:
+        deleted_key = list(request.form.keys())[0]
+        data_request = request.form.get(deleted_key).replace('\'', '"')
+        data_request = json.loads(data_request)
+
+        deleted_word = data_request['deleted']
+        data_request[deleted_key] = ' '.join([word for word in data_request[deleted_key].split() if word != deleted_word])
+
+        data['name_dish'] = data_request.get('name_dish')
+        data['product_description'] = data_request.get('product_description')
+        data['price'] = data_request.get('price')
+
+        logger.info('Predict without one word')
+        response = json.loads(predictions.predict(data))
+        return render_template('predicted.html', response=response, form=form)
 
 
 @click.command()
@@ -260,7 +292,6 @@ def predict_form():
 @click.option('--debug', default=False)
 def run_app(host, port, debug):
     app.run(host, port, debug)
-
 
     
 if __name__ == '__main__':

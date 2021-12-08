@@ -24,7 +24,7 @@
             <div class="request label">
                 
             </div>
-            <div class="category label">
+            <div class="categories label">
                 Категория
             </div>
         </div>
@@ -45,7 +45,7 @@
             </button>
         </div>
     </form>
-    {% if response %}
+    {% if response.error %}
         <div class="err">
             <div>
                 Ошибка при обработке слова {{ response.error }}. Возможно, в слове опечатка или оно написано латиницей.
