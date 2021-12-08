@@ -1,0 +1,25 @@
+# @package _global_
+
+# to execute this experiment run:
+# python src/train.py experiment=mean_emb_nn.yaml
+
+# defaults:
+#   - override /model: null
+
+model:
+  _target_: nn_utils.emb_clf.EmbeddingClassifier
+  emb_model: 
+    _target_: model.mean_emb_nn.MeanEmbeddingModel2
+  embedding_fun: 
+    _target_: nn_utils.word_embedding.CompressFastTextEmb 
+    model_path: /tmp/compress_fast_text.model
+    load_url: https://github.com/avidale/compress-fasttext/releases/download/v0.0.4/08_11_3_6_model_400K_100K_pq300.bin
+  lr: 0.001
+  n_epoch: 8
+
+
+
+mlflow:
+  experiment_name: "mean_emb_nn"
+
+

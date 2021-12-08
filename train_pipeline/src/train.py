@@ -17,6 +17,10 @@ import mlflow
 from utils import load_data, split_data, reduce_data, extract_target
 from preprocess.text_process import word_counter
 
+import torch
+import numpy as np
+import random
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -29,6 +33,10 @@ def train(config: DictConfig) -> Optional[float]:
     Returns:
         Optional[float]: Metric score for hyperparameter optimization.
     """
+
+    np.random.seed(config.seed)
+    random.seed(config.seed)
+    torch.manual_seed(config.seed)
 
     mlflow.set_tracking_uri(config.mlflow.tracking_uri)
     mlflow.set_experiment(config.mlflow.experiment_name)
@@ -73,6 +81,7 @@ def train(config: DictConfig) -> Optional[float]:
             # X_train = pd.DataFrame(preprosess.fit_transform(X_train), 
             #                     columns=X_train.columns)
             X_train = preprosess.fit_transform(X_train)
+            X_valid = preprosess.transform(X_valid)
 
         # словарь обучения
         name_words = word_counter(X_train['name_dish'])
@@ -82,11 +91,16 @@ def train(config: DictConfig) -> Optional[float]:
         logger.debug(f'train product_description words: {len(desc_words)}')
         logger.debug(f'train total words: {len(name_words + desc_words)}')
 
+
         # модель
         model = hydra.utils.instantiate(config.model)
-        model.fit(X_train, y_train)
 
-        y_pred = model.predict(preprosess.transform(X_valid))
+        try:
+            model.fit(X_train, y_train, X_valid, y_valid)
+        except:
+            model.fit(X_train, y_train)
+
+        y_pred = model.predict(X_valid)
 
         report = pd.DataFrame(classification_report(y_valid, 
                                                     y_pred, 

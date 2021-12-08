@@ -1,0 +1,25 @@
+# @package _global_
+
+# to execute this experiment run:
+# python src/train.py experiment=emb_bilstm.yaml
+
+# defaults:
+#   - override /model: null
+
+model:
+  _target_: nn_utils.emb_clf.EmbeddingClassifier
+  emb_model: 
+    _target_: model.emb_bilstm.UnionEmbeddingBiLSTM
+  embedding_fun: 
+    _target_: nn_utils.word_embedding.RusVectoresEmb
+    model_path: /media/elena/13e9efd4-799d-4087-8d03-b4e8eea4a3cc2/MADE_DATA/3sem/Project/213/model.model
+  lr: 0.0005
+  n_epoch: 10
+  n_unfreeze: 6
+  scheduler_step: 4
+  scheduler_gamma: 0.5
+
+
+
+mlflow:
+  experiment_name: "emb_bilstm"
