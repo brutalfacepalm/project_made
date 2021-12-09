@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -71,7 +71,7 @@ class TransformerToDF:
                             columns=self.columns)
 
 
-def PreprocessTransformer(to_spell_path, max_len=10000, threshold_cnt=10, unk_token=' ') -> ColumnTransformer:
+def PreprocessNameDescPrice(to_spell_path, max_len=10000, threshold_cnt=10, unk_token=' ') -> ColumnTransformer:
 
     word_to_correct = np.load(to_spell_path, allow_pickle=True).item()
     corrector = CorrectSpelling(word_to_correct)
@@ -102,15 +102,47 @@ def PreprocessTransformer(to_spell_path, max_len=10000, threshold_cnt=10, unk_to
                     (  "filter_outliers",
                         PriceOutliersTransformer(),
                     ),
-                    # (  "standard_scaler",
-                    #     StandardScaler(),
-                    # ),
+                    (  "normalization",
+                        MinMaxScaler(),
+                    ),
                 ]),
                 ["price"],
             ),
         ],
-        #remainder="passthrough",
+        remainder="drop",
     )
 
     return TransformerToDF(transformer, ["name_dish", "product_description", "price"])
+
+
+def PreprocessNameDesc(to_spell_path, max_len=10000, threshold_cnt=10, unk_token=' ') -> ColumnTransformer:
+
+    word_to_correct = np.load(to_spell_path, allow_pickle=True).item()
+    corrector = CorrectSpelling(word_to_correct)
+
+
+    transformer = ColumnTransformer(
+        [
+            (  "text_process_pipeline",
+                Pipeline([
+                    (  "tokenizer",
+                        SimpleTokenizerTransformer(),
+                    ),
+                    (  "corrector",
+                        CorrectSpellingTransformer(corrector),
+                    ),
+                    (  "lemmatizer",
+                        MystemLemmatizerTransformer(),
+                    ),
+                    (  "keep_common",
+                        KeepCommonTransformer(max_len, threshold_cnt, unk_token),
+                    ),
+                ]),
+                ["name_dish", "product_description"],
+            ),
+        ],
+        remainder="drop",
+    )
+
+    return TransformerToDF(transformer, ["name_dish", "product_description"])
 
