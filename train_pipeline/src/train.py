@@ -9,12 +9,12 @@ from omegaconf import DictConfig
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import classification_report
+from sklearn import metrics
 
 import mlflow
 
 
-from utils import load_data, split_data, reduce_data, extract_target
+from utils import load_data, load_test_data, reduce_data, extract_target, write_report, check_precision_recall
 from preprocess.text_process import word_counter
 
 import torch
@@ -53,14 +53,16 @@ def train(config: DictConfig) -> Optional[float]:
         data = load_data(config.load_data.in_path, config.load_data.out_path)
         logger.debug(f'load data, len={len(data)}, columns={data.columns}')
 
-        # отделяем тестовый набор
-        train, test = split_data(data, config.test_split.test_size)
-        logger.debug(f'split data, train={len(train)}, test={len(test)}')
+        # тестовый набор
+        X_test, y_test = load_test_data(config.test_data_path)
+        logger.debug(f'test data len = {len(X_test)}, columns = {X_test.columns}')
+        # train, test = split_data(data, config.test_split.test_size)
+        # logger.debug(f'split data, train={len(train)}, test={len(test)}')
         #logger.debug(f'{train.tags_menu.value_counts()}')
         #logger.debug(f'{test.tags_menu.value_counts() / train.tags_menu.value_counts()}')
 
         # уменьшаем количество тренировочных данных, если надо
-        train = reduce_data(train, config.train_reduce.class_max_len)
+        train = reduce_data(data, config.train_reduce.class_max_len)
         logger.debug(f'reduce train size={len(train)}')
         #logger.debug(f'{train.tags_menu.value_counts()}')
 
@@ -100,26 +102,53 @@ def train(config: DictConfig) -> Optional[float]:
         except:
             model.fit(X_train, y_train)
 
-        y_pred = model.predict(X_valid)
+        # оцениваем на train
+        pred_train = model.predict(X_train)
+        train_report = pd.DataFrame(metrics.classification_report(y_train, 
+                                                        pred_train, 
+                                                        output_dict=True, 
+                                                        target_names=target_encoder.classes_)
+                                    ).T
+        print('train report:')
+        print(train_report)
 
-        report = pd.DataFrame(classification_report(y_valid, 
-                                                    y_pred, 
-                                                    output_dict=True, 
-                                                    target_names=target_encoder.classes_)
-                            ).T
-        print(report)
+        # оцениваем на валидации
+        pred_valid = model.predict(X_valid)
+        valid_report = pd.DataFrame(metrics.classification_report(y_valid, 
+                                                        pred_valid, 
+                                                        output_dict=True, 
+                                                        target_names=target_encoder.classes_)
+                                    ).T
+        print('validation report:')
+        print(valid_report)
+
+        # оцениваем на тестовом датасете
+        X_test = preprosess.transform(X_test)
+        y_test = target_encoder.transform(y_test)
+        pred_test = model.predict(X_test)
+        test_report = pd.DataFrame(metrics.classification_report(y_test, 
+                                                        pred_test, 
+                                                        output_dict=True, 
+                                                        target_names=target_encoder.classes_)
+                                    ).T
+        print('test report:')
+        print(test_report)
+
+        check_precision_recall(y_test, pred_test, n_classes=len(target_encoder.classes_))
 
         mlflow.log_metrics({
-            'precision':report['precision']['macro avg'],
-            'recall':report['recall']['macro avg'],
+            'train_precision' : train_report['precision']['macro avg'],
+            'train_recall' : train_report['recall']['macro avg'],
+            'valid_precision' : valid_report['precision']['macro avg'],
+            'valid_recall' : valid_report['recall']['macro avg'],
+            'test_precision' : test_report['precision']['macro avg'],
+            'test_recall' : test_report['recall']['macro avg'],
             })
         mlflow.log_params(config.model)
-        mlflow.log_artifacts(hydra.utils.to_absolute_path("configs"))
 
-        html = report.to_html()
-        with open("report.html", "w", encoding="utf-8") as file:
-            file.writelines('<meta charset="UTF-8">\n')
-            file.write(html)
+        write_report(train_report,  'train_report.html')
+        write_report(valid_report, 'valid_report.html')
+        write_report(test_report,  'test_report.html')
 
         mlflow.log_artifacts(os.getcwd())
 

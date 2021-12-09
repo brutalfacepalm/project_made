@@ -9,13 +9,13 @@
 model:
   _target_: nn_utils.emb_clf.EmbeddingClassifier
   emb_model: 
-    _target_: model.emb_bilstm.UnionEmbeddingBiLSTM
+    _target_: model.emb_bilstm_text.UnionEmbeddingBiLSTM
   embedding_fun: 
     _target_: nn_utils.word_embedding.RusVectoresEmb
     model_path: /media/elena/13e9efd4-799d-4087-8d03-b4e8eea4a3cc2/MADE_DATA/3sem/Project/213/model.model
   lr: 0.0005
-  n_epoch: 10
-  n_unfreeze: 6
+  n_epoch: 7
+  n_unfreeze: 3
   scheduler_step: 4
   scheduler_gamma: 0.5
 

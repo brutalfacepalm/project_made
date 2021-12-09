@@ -17,23 +17,25 @@ mlflow:
   tracking_uri: http://madeclassifirefoodtype.ru:4040/
   experiment_name: "default"
   
-
+seed: 0
 
 load_data:
   in_path: data/menu_df_for_made.pkl
   out_path: data/load_data.csv
 
-test_split:
-  test_size: 0.1
+test_data_path: data/golden_set_custom.csv
+
+# test_split:
+#   test_size: 0.1
 
 train_reduce:
   class_max_len: 10000
 
 valid_split:
-  val_size: 0.3
+  val_size: 0.2
 
 preprocess:
-  _target_: preprocess.transform_pipeline.PreprocessTransformer
+  _target_: preprocess.transform_pipeline.PreprocessNameDesc
 
   to_spell_path: project_made/preprocess/to_spell.npy
   max_len: 10000

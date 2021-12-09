@@ -3,15 +3,18 @@ from typing import Tuple
 import logging
 import pickle
 import os
-#from numpy.core.numeric import indices
-
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+def load_test_data(path: str) -> pd.DataFrame:
+    data = pd.read_csv(path)
+    #logger.debug(f"load test data from {path}")
+    return data.drop(columns='target'), data['target']
 
 
 def load_data(in_path: str, out_path: str) -> pd.DataFrame:
@@ -63,5 +66,33 @@ def reduce_data(data: pd.DataFrame, class_max_len: int) -> pd.DataFrame:
 def extract_target(data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     return data.drop(columns='tags_menu'), data['tags_menu']
 
+
+def write_report(report, path):
+    html = report.to_html()
+    with open(path, "w", encoding="utf-8") as file:
+        file.writelines('<meta charset="UTF-8">\n')
+        file.write(html)
+
+
+def check_precision_recall(y_true, y_pred, n_classes):
+    from sklearn import metrics
+    import numpy as np
+
+    sk_precision = metrics.precision_score(y_true, y_pred, average='macro')
+    sk_recall = metrics.recall_score(y_true, y_pred, average='macro')
+    print(f'sklearn precision: {sk_precision}, recall: {sk_recall}')
+
+    target_true = np.zeros(n_classes)
+    predict_true = np.zeros(n_classes)
+    correct_true = np.zeros(n_classes)
+    recall_classes = np.zeros(n_classes)
+    precision_classes = np.zeros(n_classes)
+    for i in range(n_classes):
+        target_true[i] = np.sum((y_true == i).astype(int))
+        predict_true[i] = np.sum((y_pred == i).astype(int))
+        correct_true[i] = np.sum((y_true == i).astype(int) * (y_pred == i).astype(int))
+        recall_classes[i] = correct_true[i] / target_true[i] if target_true[i] != 0 else 0
+        precision_classes[i] = correct_true[i] / predict_true[i] if predict_true[i] != 0 else 0
+    print(f'checked precision: {np.mean(precision_classes)}, recall: {np.mean(recall_classes)}')
 
 
