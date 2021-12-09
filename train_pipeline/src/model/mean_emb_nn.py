@@ -3,17 +3,13 @@ import torch
 from torch import nn
 
 
-class MeanEmbeddingModel(nn.Module):
+class MeanEmbeddingInterface(nn.Module):
     def __init__(self):
-        super(MeanEmbeddingModel, self).__init__()
+        super(MeanEmbeddingInterface, self).__init__()
 
     def set(self, word_embeddings, out_dim):
         self.embedding = nn.Embedding.from_pretrained(torch.FloatTensor(np.array(word_embeddings)), 
                                                       freeze=True)
-        
-        self.fc = nn.Linear(self.embedding.weight.shape[-1] * 2 + 1, out_dim)
-        torch.nn.init.xavier_uniform_(self.fc.weight)
-        return self
 
     def _calc_emb(self, text_idxs, text_len):
         emb = self.embedding(text_idxs) # batch_len, seq_len, emb_shape
@@ -22,64 +18,58 @@ class MeanEmbeddingModel(nn.Module):
         emb = torch.div(emb, text_len.unsqueeze(1)) # batch_len, emb_shape
         return emb
 
-    def forward(self, name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len, price):
-        name_emb = self._calc_emb(name_idxs, name_len) # batch_len, emb_shape
-        desc_emb = self._calc_emb(desc_idxs, desc_len) # batch_len, emb_shape
-        input = torch.cat((name_emb, desc_emb, price.unsqueeze(1)), dim = -1) #batch_len, 2 * emb_shape + 1
-        
-        input = self.fc(input) # batch_len, out_dim
-        return input
 
-
-class CatMeanEmbeddingModel(MeanEmbeddingModel):
+class UnionMeanEmbeddingModel(MeanEmbeddingInterface):
     def __init__(self):
-        super(CatMeanEmbeddingModel, self).__init__()
-    
+        super(UnionMeanEmbeddingModel, self).__init__()
+
     def set(self, word_embeddings, out_dim):
-        self.embedding = nn.Embedding.from_pretrained(torch.FloatTensor(np.array(word_embeddings)), 
-                                                      freeze=True)
+        super(UnionMeanEmbeddingModel, self).set(word_embeddings, out_dim)
+
+        self.dropout = nn.Dropout(p=0.1)
         self.fc = nn.Linear(self.embedding.weight.shape[-1] + 1, out_dim)
         torch.nn.init.xavier_uniform_(self.fc.weight)
         return self
 
     def forward(self, name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len, price):
-        emb = self._calc_emb(torch.cat((name_idxs, desc_idxs), dim = -1),
-                             name_len + desc_len) # batch_len, emb_shape
-        input = torch.cat((emb, price.unsqueeze(1)), dim = -1) #batch_len, emb_shape + 1
+        emb = self._calc_emb(union_idxs, union_len) # batch_len, emb_shape
+        emb_price = torch.cat((emb, price.unsqueeze(1)), dim = -1) #batch_len, emb_shape + 1
         
-        input = self.fc(input) # batch_len, out_dim
-        return input
+        logits = self.fc(self.dropout(emb_price)) # batch_len, out_dim
+        return logits
 
 
-class UnionMeanEmbeddingModel(CatMeanEmbeddingModel):
+class CatMeanEmbeddingModel(MeanEmbeddingInterface):
     def __init__(self):
-        super(UnionMeanEmbeddingModel, self).__init__()
+        super(CatMeanEmbeddingModel, self).__init__()
 
-    # def set(self, *args):
-    #     super(UnionMeanEmbeddingModel, self).set(*args)
-    #     self.embedding = nn.Embedding(*self.embedding.weight.shape)
-    #     torch.nn.init.xavier_uniform_(self.embedding.weight)
-    #     return self
+    def set(self, word_embeddings, out_dim):
+        super(CatMeanEmbeddingModel, self).set(word_embeddings, out_dim)
+        
+        self.fc = nn.Linear(self.embedding.weight.shape[-1] * 2 + 1, out_dim)
+        torch.nn.init.xavier_uniform_(self.fc.weight)
+        return self
 
     def forward(self, name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len, price):
-        emb = self._calc_emb(union_idxs, union_len) # batch_len, emb_shape
-        input = torch.cat((emb, price.unsqueeze(1)), dim = -1) #batch_len, emb_shape + 1
+        name_emb = self._calc_emb(name_idxs, name_len) # batch_len, emb_shape
+        desc_emb = self._calc_emb(desc_idxs, desc_len) # batch_len, emb_shape
+        cat_emb_price = torch.cat((name_emb, desc_emb, price.unsqueeze(1)), dim = -1) #batch_len, 2 * emb_shape + 1
         
-        input = self.fc(input) # batch_len, out_dim
-        return input
+        logits = self.fc(cat_emb_price) # batch_len, out_dim
+        return logits
 
 
-class MeanEmbeddingModel2(MeanEmbeddingModel):
+class CatMeanEmbeddingModel2(CatMeanEmbeddingModel):
     def __init__(self):
-        super(MeanEmbeddingModel2, self).__init__()
+        super(CatMeanEmbeddingModel2, self).__init__()
 
     def set(self, word_embeddings, out_dim, hid_dim=256):
-        self.embedding = nn.Embedding.from_pretrained(torch.FloatTensor(np.array(word_embeddings)), 
-                                                      freeze=True)
+        super(CatMeanEmbeddingModel2, self).set(word_embeddings, out_dim)
+
+        #self.dropout = nn.Dropout(p=0.5)
         self.fc = nn.Sequential(
             nn.Linear(self.embedding.weight.shape[-1] * 2 + 1, hid_dim),
             nn.ReLU(),
-            #nn.Dropout(0.2),
             nn.Linear(hid_dim, out_dim)
         )
         for m in self.fc:

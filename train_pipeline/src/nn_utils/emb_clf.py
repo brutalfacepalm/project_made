@@ -12,8 +12,8 @@ from nn_utils.word_embedding import CompressFastTextEmb
 from nn_utils.dataloader_gen import dataloader_gen, weighted_dataloader_gen
 from transform.vocabulary import Vocabulary
 from nn_utils.train_loop import train_epoch, evaluate_epoch
-from model.mean_emb_nn import MeanEmbeddingModel
-     
+from model.mean_emb_nn import UnionMeanEmbeddingModel
+   
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)       
@@ -21,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 
 class EmbeddingClassifier(ClassifierMixin, BaseEstimator):
     def __init__(self,
-                 emb_model=MeanEmbeddingModel(),
+                 emb_model=UnionMeanEmbeddingModel(),
                  embedding_fun=CompressFastTextEmb(),
                  lr=1e-3,
                  n_epoch=20,
@@ -64,15 +64,16 @@ class EmbeddingClassifier(ClassifierMixin, BaseEstimator):
             train_dataloader = weighted_dataloader_gen(X, y, vocab.text_to_idxs, pad_idx, 
                                                     weights=class_weights[y], batch_size=64)
             valid_dataloader = weighted_dataloader_gen(X_val, y_val, vocab.text_to_idxs, pad_idx, 
-                                                    weights=class_weights[y_val], batch_size=1024)
+                                                    weights=class_weights[y_val], batch_size=1024) \
+                               if X_val is not None and y_val is not None else None
         else:
             criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor(class_weights), reduction='mean')
             train_dataloader = dataloader_gen(X, y, vocab.text_to_idxs, pad_idx, batch_size=64, shuffle=True)
             valid_dataloader = dataloader_gen(X_val, y_val, vocab.text_to_idxs, pad_idx, batch_size=1024, shuffle=False) \
-                            if X_val is not None and y_val is not None else None
+                               if X_val is not None and y_val is not None else None
 
 
-        optimizer = torch.optim.Adam(model.fc.parameters(), lr=self.lr)
+        optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
 
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 
                                                     step_size=self.scheduler_step, 
@@ -100,7 +101,6 @@ class EmbeddingClassifier(ClassifierMixin, BaseEstimator):
 
 
     def predict(self, X):
-
         dataloader = dataloader_gen(X, None, self.vocab.text_to_idxs, self.pad_idx, batch_size=1024, shuffle=False)
         self.model.eval()
         with torch.no_grad():

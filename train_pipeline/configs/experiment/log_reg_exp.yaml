@@ -7,8 +7,8 @@
 #   - override /model: null
 
 model:
-  _target_: model.log_reg.TfIdf_Price_LogReg
-  C: 100
+  _target_: model.log_reg.TfIdf_LogReg
+  C: 0.1
 
 
 mlflow:

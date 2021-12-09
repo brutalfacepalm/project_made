@@ -12,7 +12,7 @@ def evaluate_epoch(model, dataloader, criterion, device):
                 
             pred = model(*inputs)
             loss = criterion(pred.cpu(), output)
-            total_loss += loss.item()
+            total_loss += float(loss.item())
 
     return total_loss / step
 

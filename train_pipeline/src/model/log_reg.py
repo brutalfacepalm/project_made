@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from preprocess.transform_pipeline import TfIdfColumnTransformer
 
 
-def TfIdf_Price_LogReg(C=1) -> Pipeline:
+def TfIdf_LogReg(C=1) -> Pipeline:
     return Pipeline([
         (  "tf_idf_price",
            TfIdfColumnTransformer(),

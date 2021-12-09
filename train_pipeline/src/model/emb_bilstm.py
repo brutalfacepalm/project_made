@@ -23,6 +23,11 @@ class UnionEmbeddingBiLSTM(nn.Module):
             nn.ReLU(),
             nn.Linear(hid_dim, out_dim)
         )
+
+        for m in self.fc:
+            if isinstance(m, nn.Linear):
+                torch.nn.init.xavier_uniform_(m.weight)
+
         return self
 
     def forward(self, name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len, price):

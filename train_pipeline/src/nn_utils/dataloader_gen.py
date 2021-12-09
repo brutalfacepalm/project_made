@@ -1,10 +1,12 @@
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.sampler import WeightedRandomSampler
 
+
 class FullDataset(Dataset):
-    def __init__(self, name_idxs, desc_idxs, price, y_idx=None):
+    def __init__(self, name_idxs, desc_idxs, price=None, y_idx=None):
         self.name_idxs = name_idxs
         self.name_len = list(map(len, name_idxs))
         self.desc_idxs = desc_idxs
@@ -15,7 +17,7 @@ class FullDataset(Dataset):
         self.y_idx = y_idx
 
     def __len__(self):
-        return len(self.price)
+        return len(self.name_idxs)
     
     def __getitem__(self, idx):       
         out = (self.name_idxs[idx], 
@@ -24,51 +26,45 @@ class FullDataset(Dataset):
                self.desc_len[idx],
                self.union_idxs[idx],
                self.union_len[idx],
-               self.price[idx],
-
         )
+        if self.price is not None:
+            out = *out, self.price[idx]
         if self.y_idx is not None:
             out = *out, self.y_idx[idx]
         return out
 
 
 def collate_fn(batch, pad_idx):
-    if len(batch[0]) == 8: 
-        name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len, price, y_idx = zip(*batch)
-    else:
-        name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len, price = zip(*batch)
-        y_idx = None
-
-    name_len = torch.LongTensor(name_len)
-    desc_len = torch.LongTensor(desc_len)
-    union_len = torch.LongTensor(union_len)
-
-    name_idxs = pad_sequence([torch.LongTensor(idxs) for idxs in name_idxs],
-                             padding_value=pad_idx, 
-                             batch_first=True)
-    desc_idxs = pad_sequence([torch.LongTensor(idxs) for idxs in desc_idxs],
-                             padding_value=pad_idx, 
-                             batch_first=True)
-    union_idxs = pad_sequence([torch.LongTensor(idxs) for idxs in union_idxs],
-                             padding_value=pad_idx, 
-                             batch_first=True)
-    price = torch.FloatTensor(price)
-
-    out = name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len, price
-    if y_idx is not None:
-        out = *out, torch.LongTensor(y_idx)
-    return out
-
+    inputs = zip(*batch)
+    outputs = []
+    for input in inputs:
+        if isinstance(input[0], int) or isinstance(input[0], np.int64):
+            output = torch.LongTensor(np.array(input))
+        elif isinstance(input[0], list):
+            output = pad_sequence([torch.LongTensor(np.array(idxs))
+                                   for idxs in input
+                                   ],
+                                   padding_value=pad_idx, 
+                                   batch_first=True
+                                )
+        elif isinstance(input[0], float):
+            output = torch.FloatTensor(np.array(input))
+        else:
+            # import pdb
+            # pdb.set_trace()
+            raise Exception('input type=', type(input[0]))
+        outputs.append(output)
+    return outputs
 
 
 def dataloader_gen(X, y, text_to_idxs_fun, pad_idx, batch_size=64, shuffle=True):
     name_idxs = X['name_dish'].apply(text_to_idxs_fun).values
     desc_idxs = X['product_description'].apply(text_to_idxs_fun).values
-    price = X['price'].values
+    price = X['price'].values if 'price' in X.columns else None
     y_idx = y
-
+    
     dataset = FullDataset(name_idxs, desc_idxs, price, y_idx)
-        
+
     dataloader = torch.utils.data.DataLoader(
         dataset,
         shuffle=shuffle,
@@ -81,7 +77,7 @@ def dataloader_gen(X, y, text_to_idxs_fun, pad_idx, batch_size=64, shuffle=True)
 def weighted_dataloader_gen(X, y, text_to_idxs_fun, pad_idx, weights, batch_size=64):
     name_idxs = X['name_dish'].apply(text_to_idxs_fun).values
     desc_idxs = X['product_description'].apply(text_to_idxs_fun).values
-    price = X['price'].values
+    price = X['price'].values if 'price' in X.columns else None
     y_idx = y
 
     dataset = FullDataset(name_idxs, desc_idxs, price, y_idx)
