@@ -3,25 +3,25 @@ import sys
 import re
 import logging
 import click
+import torch.nn.functional
 
-from flask import Flask, render_template, redirect, url_for, request, session
+from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
 from requests.exceptions import ConnectionError
-from wtforms import widgets, IntegerField, SelectField, StringField, Field
-from wtforms.validators import DataRequired, Regexp, Optional, ValidationError
+from wtforms import widgets, StringField, Field
+from wtforms.validators import DataRequired, Optional, ValidationError
 from werkzeug.datastructures import ImmutableMultiDict
 
 import pandas as pd
 import numpy as np
-from scipy.special import softmax
-from pymystem3 import Mystem
+from torch import no_grad
 
 PATHFORMODEL = '../prodmodel'
 sys.path.append(PATHFORMODEL)
 
-from model import get_model
+from modelbert import get_model
 from preprocessing import get_cleaner
-from featureextractor import get_feature_extractor
+from berttokenizer import get_feature_extractor
 from decodepredict import get_decoder
 from utils import get_logger
 
@@ -78,12 +78,8 @@ class ClientDataForm(FlaskForm):
             logger.info('validate name_dish fail')
             raise ValidationError('%s: поле должно содержать текст кириллицей.' % field.label.text)
 
-    name_dish = StringField('Название блюда', 
-        validators=[#Regexp(r'^\W+$', message='Поле должно содержать текст кириллицей.'),
-                    validate_name_dish,
-                    DataRequired(),
-                    ])
-    product_description = StringField('Описание блюда', validators=[Optional()])
+    name_dish = StringField('Название блюда', validators=[validate_name_dish, DataRequired()])
+    product_description = StringField('Описание блюда', validators=[validate_name_dish, DataRequired()])
     price = IntegerFieldCustom('Цена', validators=[Optional()])
 
 
@@ -93,123 +89,123 @@ class Predictions:
         self.cleaner = cleaner
         self.feature_extractor = feature_extractor
         self.model = model
+        self.model.eval()
         self.decode_predict = decode_predict
         self.results = []
         self.last_response = {}
         self.form = None
 
-    def predict(self, insurance_data):
+    def create_data(self, insurance_data):
         name_dish = insurance_data['name_dish'].strip()
         product_description = insurance_data['product_description'].strip()
-        price = insurance_data['price'].strip()
-        data = pd.DataFrame(data=[[name_dish, product_description]],
-                            columns=['name_dish', 'product_description'])
+        price = insurance_data['price'].strip() if insurance_data['price'] else 0
+        data = pd.DataFrame(data=[[name_dish, product_description, price]],
+                            columns=['name_dish', 'product_description', 'price'])
+        return data, name_dish, product_description, price
 
-        clean_data = self.cleaner.clean_data(data)
+    def preprocess(self, data):
+        cleared_data = self.cleaner.clean_data(data)
         logger.info('Data was cleaned')
-        
+        return cleared_data
+
+    def get_data_for_predict(self, clean_data):
         data_for_predict = self.feature_extractor.get_features(clean_data)
         logger.info('Work of extractor was complete')
-        
-        predict = self.model(*data_for_predict).detach().numpy()
+        return data_for_predict
+
+    def predict_from_model(self, input_ids, attention_masks):
+        with no_grad():
+            predict = self.model(input_ids, token_type_ids=None,
+                                 attention_mask=attention_masks)
         logger.info('Predict complete')
-        predict_label = np.argmax(predict)
+        return predict
 
+    def get_top_5_predictions(self, predict):
         top_5_labels = np.argsort(predict)[0][-5:][::-1]
-        top_5_cat = [self.decode_predict.decode_answer(label) for label in top_5_labels]
-        top_5_proba = list(map(lambda x: round(x*100, 2), softmax(predict)[0][top_5_labels]))
+        top_5_cat = [self.predict_as_word(label) for label in top_5_labels]
+        top_5_proba = list(map(lambda x: round(x*100, 2), predict[0][top_5_labels]))
         top_5_prediction = dict(zip(top_5_cat, top_5_proba))
+        return top_5_prediction
 
-        predict_proba = predict[:, predict_label]
+    def predict_as_word(self, label):
+        return self.decode_predict.decode_answer(label)
 
-
+    def get_word_importance(self, data, clean_data, predict_label, predict_proba):
         logger.info('Start of process getting importance of words')
         words_in_data = [x for x in list(set(data['name_dish'].values[0].split(' ') \
                          + data['product_description'].values[0].split(' '))) if x != '']
         word_importance = {}
-        
-        if len(words_in_data) > 1:
-            for word in words_in_data:
-                name_dish_ww = ' '.join([w for w in name_dish.split(' ') if w!=word])
-                product_description_ww = ' '.join([w for w in product_description.split(' ') if w!=word])
-                
-                data_ww = pd.DataFrame(data=[[name_dish_ww, product_description_ww]],
-                                                columns=['name_dish', 'product_description'])
-                
-                clean_data_ww = self.cleaner.clean_data(data_ww)
+        word_collect = {}
+        data_ww = {}
 
-                clean_w = self.cleaner.clean_data(pd.DataFrame(data=[[word, '']],
-                                                columns=['name_dish', 'product_description']))
-                
-                invalid_data = [x for x in list(set(clean_w['name_dish'].values[0].split(' ') \
-                         + clean_w['product_description'].values[0].split(' '))) if x != '']
-                empty_data = [x for x in list(set(clean_data_ww['name_dish'].values[0].split(' ') \
-                         + clean_data_ww['product_description'].values[0].split(' '))) if x != '']
-                
-                if invalid_data and empty_data:
-                    data_for_predict_ww = self.feature_extractor.get_features(clean_data_ww)
-                    predict_ww = self.model(*data_for_predict_ww).detach().numpy()
+        for word in words_in_data:
+            word_c = self.cleaner.stemmer.lemmatize(word.strip())[0]
+            data_ww[word_c] = ' '.join([w for w in clean_data.split() if w != word_c])
+            if word_c in word_collect:
+                word_collect[word_c].append(word)
+            else:
+                word_collect[word_c] = [word]
 
-                    predict_label_ww = np.argmax(predict_ww)
-                    if predict_label_ww == predict_label:
-                        word_importance[word] = list(predict_ww[:, predict_label_ww] - predict_proba)[0]
-                    else:
-                        word_importance[word] = 'another_predict'
-                elif not invalid_data:
-                    word_importance[word] = 'invalid_data'
-                elif not empty_data:
-                    word_importance[word] = 'normal'
-
-            logger.info('Finish of process getting importance of words')
-
-            logger.info('Normalize importance')
-            min_importance = np.inf
-            max_importance = -np.inf        
-            for word in word_importance:
-                if word_importance[word] not in ['another_predict', 'normal', 'invalid_data']:
-                    if word_importance[word] > max_importance:
-                        max_importance = word_importance[word]
-                    if word_importance[word] < min_importance:
-                        min_importance = word_importance[word]
-
-
-            logger.info('Get class css for words')
-            for word in word_importance:
-                if word_importance[word] not in ['another_predict', 'normal', 'invalid_data']:
-                    if min_importance != max_importance:
-                        imp = int(((word_importance[word] - min_importance)/
-                            (max_importance - min_importance) - 0.5)*6)*(-1)
-                        if imp == -3:
-                            word_importance[word] = {'class': 'high_negative', 'imp': imp}
-                        elif imp == -2:
-                            word_importance[word] = {'class': 'mid_negative', 'imp': imp}
-                        elif imp == -1:
-                            word_importance[word] = {'class': 'low_negative', 'imp': imp}
-                        elif imp == 1:
-                            word_importance[word] = {'class': 'low_positive', 'imp': imp}
-                        elif imp == 2:
-                            word_importance[word] = {'class': 'mid_positive', 'imp': imp}
-                        elif imp == 3:
-                            word_importance[word] = {'class': 'high_positive', 'imp': imp}
-                        else:
-                            word_importance[word] = {'class': 'normal', 'imp': imp}
-                    else:
-                        word_importance[word] = {'class': 'normal', 'imp': 'NaN'}
-                elif word_importance[word] == 'another_predict':
-                    word_importance[word] = {'class': 'another_predict', 'imp': 'another_predict'}
-                elif word_importance[word] == 'normal':
-                    word_importance[word] = {'class': 'normal', 'imp': 'NaN'}
-                elif word_importance[word] == 'invalid_data':
-                    word_importance[word] = {'class': 'invalid_data', 'imp': 'NaN'}
+        if len(data_ww) > 1:
+            for word_deleted in data_ww:
+                data_temp = data_ww[word_deleted]
+                input_ids_temp, attention_masks_temp = self.get_data_for_predict(data_temp)
+                predict_temp = self.predict_from_model(input_ids_temp, attention_masks_temp)[0]
+                predict_temp = torch.nn.functional.softmax(predict_temp).numpy()
+                predict_label_temp = np.argmax(predict_temp)
+                predict_proba_temp = predict_temp[:, predict_label_temp]
+                if predict_label_temp == predict_label:
+                    imp = int((predict_proba - predict_proba_temp) * 100)
+                    if imp >= 15:
+                        for w in list(word_collect[word_deleted]):
+                            word_importance[w] = {'class': 'high_positive', 'imp': 3}
+                    elif imp >= 10:
+                        for w in list(word_collect[word_deleted]):
+                            word_importance[w] = {'class': 'mid_positive', 'imp': 2}
+                    elif imp >= 5:
+                        for w in list(word_collect[word_deleted]):
+                            word_importance[w] = {'class': 'low_positive', 'imp': 1}
+                    elif imp > -5:
+                        for w in list(word_collect[word_deleted]):
+                            word_importance[w] = {'class': 'normal', 'imp': 0}
+                    elif imp > -10:
+                        for w in list(word_collect[word_deleted]):
+                            word_importance[w] = {'class': 'low_negative', 'imp': -1}
+                    elif imp > -15:
+                        for w in list(word_collect[word_deleted]):
+                            word_importance[w] = {'class': 'mid_negative', 'imp': -2}
+                    elif imp <= -15:
+                        for w in list(word_collect[word_deleted]):
+                            word_importance[w] = {'class': 'high_negative', 'imp': -3}
+                else:
+                    for w in list(word_collect[word_deleted]):
+                        word_importance[w] = {'class': 'another_predict', 'imp': 'another_predict'}
         else:
-            word_importance[words_in_data[0]] = {'class': 'normal', 'imp': 'NaN'}
+            for w in words_in_data:
+                word_importance[w] = {'class': 'normal', 'imp': 'NaN'}
 
+        return word_importance
 
-        logger.info(word_importance)
+    def predict(self, insurance_data):
+        data, name_dish, product_description, price = self.create_data(insurance_data)
+        clean_data = self.preprocess(data)
+        input_ids, attention_masks = self.get_data_for_predict(clean_data)
 
+        model_output = self.predict_from_model(input_ids, attention_masks)
+        predict = model_output[0]
+
+        predict = torch.nn.functional.softmax(predict).numpy()
+        predict_label = np.argmax(predict)
+        predict_proba = predict[:, predict_label]
+
+        top_5_prediction = self.get_top_5_predictions(predict)
 
         logger.info('Decode main prediction label')
         cat_prediction = self.decode_predict.decode_answer(predict_label)
+
+        word_importance = self.get_word_importance(data, clean_data, predict_label, predict_proba)
+
+        logger.info(word_importance)
 
         logger.info('Get result')
         result = {'name_dish': {'current_name': name_dish.split(' ')},
@@ -267,23 +263,27 @@ def predict_form():
         logger.info('Load predicted.html')
         return render_template('predicted.html', response=response, form=form)
     logger.info('Load form.html')
+
     if not request.form:
         return render_template('form.html', response=predictions.last_response, form=form)
     else:
-        deleted_key = list(request.form.keys())[0]
-        data_request = request.form.get(deleted_key).replace('\'', '"')
-        data_request = json.loads(data_request)
+        if 'csrf_token' not in list(request.form.keys()):
+            deleted_key = list(request.form.keys())[0]
+            data_request = request.form.get(deleted_key).replace('\'', '"')
+            data_request = json.loads(data_request)
 
-        deleted_word = data_request['deleted']
-        data_request[deleted_key] = ' '.join([word for word in data_request[deleted_key].split() if word != deleted_word])
+            deleted_word = data_request['deleted']
+            data_request[deleted_key] = ' '.join([word for word in data_request[deleted_key].split() if word != deleted_word])
 
-        data['name_dish'] = data_request.get('name_dish')
-        data['product_description'] = data_request.get('product_description')
-        data['price'] = data_request.get('price')
+            data['name_dish'] = data_request.get('name_dish')
+            data['product_description'] = data_request.get('product_description')
+            data['price'] = data_request.get('price')
 
-        logger.info('Predict without one word')
-        response = json.loads(predictions.predict(data))
-        return render_template('predicted.html', response=response, form=form)
+            logger.info('Predict without one word')
+            response = json.loads(predictions.predict(data))
+            return render_template('predicted.html', response=response, form=form)
+        else:
+            return render_template('form.html', response='', form=form)
 
 
 @click.command()
@@ -299,7 +299,7 @@ if __name__ == '__main__':
 
     cleaner = get_cleaner(PATHFORMODEL)
     logger.info('Create cleaner')
-    feature_extractor = get_feature_extractor(PATHFORMODEL)
+    feature_extractor = get_feature_extractor()
     logger.info('Create feature extractor')
     model = get_model(PATHFORMODEL)
     logger.info('Create model')

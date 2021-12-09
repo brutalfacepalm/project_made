@@ -12,7 +12,6 @@ class FeatureExtractor:
         self.path = path
         self.word_to_idx = self.__get_word_to_idx()
 
-
     def __get_word_to_idx(self):
         with open(self.path + '/dataformodel/word_to_idx.pkl', 'rb') as w_t_i_file:
             return pickle.load(w_t_i_file) 

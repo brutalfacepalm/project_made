@@ -9,6 +9,7 @@ from utils import load_files_from_s3
 ALLOWED_ALPHABET=list(map(chr, range(ord('а'), ord('я') + 1)))
 ALLOWED_ALPHABET.extend(map(chr, range(ord('a'), ord('z') + 1)))
 ALLOWED_ALPHABET.extend(list(map(str.upper, ALLOWED_ALPHABET)))
+ALLOWED_ALPHABET.extend([str(x) for x in range(10)])
 ALLOWED_ALPHABET = set(ALLOWED_ALPHABET)
 
 
@@ -36,7 +37,7 @@ class CleaningData:
         list_row = list()
         for word in normalized.split(' '):
             if word != '':
-                correct_form = correct_spelling[word]
+                correct_form = correct_spelling.get(word, word)
                 for part in correct_form.split(' '):
                     list_row.append(part)
 
@@ -62,6 +63,14 @@ class CleaningData:
 
         return ' '.join(common_words)
 
+    def __clean_price(self, data):
+        data = data.astype({'price': int})
+        data.price = data.price.apply(lambda x: x / 1000 if x > 100000 else x)
+        data.price = data.price.apply(lambda x: x / 100 if x > 35000 else x)
+
+        data = data.astype({'price': int})
+        return data
+
     def __clean_words(self, data):
         correct_spelling = np.load(self.to_spell_path, allow_pickle=True).item()
 
@@ -86,7 +95,8 @@ class CleaningData:
             data['name_dish'] = data['name_dish']\
                                             .apply(lambda x: self.__keep_common(x, count_name))
         if 'tags_menu' in data.columns:
-            data.drop_duplicates(subset = ['category', 'name_dish', 'product_description', 'tags_menu'], inplace = True)
+            data.drop_duplicates(subset=['category', 'name_dish', 'product_description', 'tags_menu'],
+                                 inplace=True)
         return data
 
     def clean_data(self, data):
@@ -95,18 +105,20 @@ class CleaningData:
         if 'tags_menu' in data.columns:
             data['tags_menu'] = data['tags_menu'].apply(lambda x: [k for k in x.keys()][0])
 
-        data.dropna(inplace = True)
+        data.dropna(inplace=True)
         data.reset_index(drop=True, inplace=True)
 
+        data = self.__clean_price(data)
 
-        for col_name in ['product_id', 'price']:
+        for col_name in ['product_id']:
             if col_name in data.columns:
                 data = data.drop(columns=col_name)
 
         data = self.__clean_words(data)
-        
-
-        return data
+        data.price = data.price.apply(lambda x: str(int(x / 100) * 100))
+        data['X'] = '[NAME] ' + data['name_dish'] + ' [DESC] ' + data['product_description'] + ' [PRICE] ' + \
+                      data['price']
+        return data['X'].values[0]
 
 def get_cleaner(path):
     load_files_from_s3('models/baseline/to_spell.npy', path, '/dataformodel/to_spell.npy')

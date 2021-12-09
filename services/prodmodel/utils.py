@@ -21,7 +21,6 @@ def load_files_from_s3(s3_path, path, filepath):
     bucket.download_file(s3_path, path + filepath)
 
 
-
 def get_logger():
     logger=logging.getLogger('logger')
     logger.setLevel(logging.INFO)
