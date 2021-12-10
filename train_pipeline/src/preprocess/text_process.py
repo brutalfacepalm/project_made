@@ -46,22 +46,21 @@ class CorrectSpelling:
 
 class MystemLemmatizer:
     def __init__(self):
-        self.stemmer = Mystem()
         self.word_to_lemma = dict()
 
-    def lemmatize_word(self, word):
+    def lemmatize_word(self, word, mystem):
         if word not in self.word_to_lemma:
-            self.word_to_lemma[word] = self.stemmer.lemmatize(word)[0]
+            self.word_to_lemma[word] = mystem.lemmatize(word)[0]
         lemma = self.word_to_lemma[word]
         return lemma
 
-    def lemmatize_sentence(self, sentence):
+    def lemmatize_sentence(self, sentence, mystem):
         if not sentence:
             return sentence
 
         return ' '.join(
             [
-                self.lemmatize_word(word)
+                self.lemmatize_word(word, mystem)
                 for word in sentence.split()
             ])
 

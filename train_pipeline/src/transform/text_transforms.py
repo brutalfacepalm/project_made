@@ -6,7 +6,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from preprocess.text_process import (SimpleTokenizer, 
                                      CorrectSpelling, 
                                      MystemLemmatizer,
-                                     word_counter)
+                                     word_counter,
+                                     Mystem)
 
 
 class TextUnionTransform(BaseEstimator, TransformerMixin):
@@ -59,7 +60,9 @@ class MystemLemmatizerTransformer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame):
-        return X.apply(lambda col: col.apply(self.lemmatizer.lemmatize_sentence))
+        mystem = Mystem()
+        to_lemmas = lambda word : self.lemmatizer.lemmatize_sentence(word, mystem)
+        return X.apply(lambda col: col.apply(to_lemmas))
 
 
 class KeepCommonTransformer(BaseEstimator, TransformerMixin):
