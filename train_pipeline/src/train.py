@@ -15,6 +15,7 @@ import mlflow
 
 
 from utils import load_data, load_test_data, reduce_data, extract_target, write_report, check_precision_recall
+from inference import InferenceModel
 from preprocess.text_process import word_counter
 
 import torch
@@ -77,13 +78,19 @@ def train(config: DictConfig) -> Optional[float]:
                                                             random_state=0)
         logger.debug(f'split data, train={len(X_train)}, valid={len(X_valid)}')
 
-        # предобработка данных   
+        # предобработка данных
         preprosess = hydra.utils.instantiate(config.preprocess)
         with timebudget("preprocess transform"):
-            # X_train = pd.DataFrame(preprosess.fit_transform(X_train), 
-            #                     columns=X_train.columns)
             X_train = preprosess.fit_transform(X_train)
             X_valid = preprosess.transform(X_valid)
+
+        # preprosess_train = pd.DataFrame(X_train)
+        # preprosess_train['target'] = target_encoder.inverse_transform(y_train)
+        # preprosess_train.drop_duplicates().to_csv('preprosess_train.csv', index=False)
+
+        # preprosess_valid = pd.DataFrame(X_valid)
+        # preprosess_valid['target'] = target_encoder.inverse_transform(y_valid)
+        # preprosess_valid.drop_duplicates().to_csv('preprosess_valid.csv', index=False)
 
         # словарь обучения
         name_words = word_counter(X_train['name_dish'])
@@ -134,7 +141,10 @@ def train(config: DictConfig) -> Optional[float]:
         print('test report:')
         print(test_report)
 
-        check_precision_recall(y_test, pred_test, n_classes=len(target_encoder.classes_))
+        #check_precision_recall(y_test, pred_test, n_classes=len(target_encoder.classes_))
+
+        inference_model = InferenceModel(model, preprosess, target_encoder)
+        inference_model.save(config.inference_path)
 
         mlflow.log_metrics({
             'train_precision' : train_report['precision']['macro avg'],

@@ -36,10 +36,9 @@ valid_split:
 
 preprocess:
   _target_: preprocess.transform_pipeline.PreprocessNameDesc
-
   to_spell_path: project_made/preprocess/to_spell.npy
   max_len: 10000
 
-
+inference_path: model.pkl
 
 
