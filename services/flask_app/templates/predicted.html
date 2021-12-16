@@ -82,37 +82,23 @@
                     </div>
                 {% endfor %}
 
-         <!--        <div class="row">
-
-                    {{ form.hidden_tag() }}
-                    {% for field in form if field.widget.input_type != 'hidden' %}
-                            {{ field(class=field.short_name, placeholder=field.label.text, value="") }}
-                    {% endfor %}
-
-                    <button class="request" type="submit">
-                        Прогноз
-                    </button>
-                    <div class="category">
-                        <input class="category" placeholder="Категория" required type="text" value disabled="True">
-                    </div>
-                </div> -->
-            </form>
-        <div class="back">
-            <div>
-                <a href="{{ url_for('predict_form') }}">
-                    <button type="submit" class="back-button">
-                        Назад
-                    </button>
-                </a>    
+            <div class="back">
+                <div>
+                    <a href="{{ url_for('predict_form') }}">
+                        <button type="submit" class="back-button">
+                            Назад
+                        </button>
+                    </a>
+                </div>
+                <div>
+                    <a href="{{ url_for('index') }}">
+                        <button type="button" class="main-button">
+                            Главная
+                        </button>
+                    </a>
+                </div>
             </div>
-            <div>
-                <a href="{{ url_for('index') }}">
-                    <button type="submit" class="main-button">
-                        Главная
-                    </button>   
-                </a>    
-            </div>
-        </div>
+        </form>
     </div>
     {% else %}
         <div class="card">

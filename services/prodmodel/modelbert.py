@@ -11,7 +11,9 @@ device = device('cuda' if cuda.is_available() else 'cpu')
 NUM_LABELS = 39
 
 
-def get_model(path):
+def get_model(paths3, path):
+    load_files_from_s3(paths3 + '/modelbert', path, '/dataformodel/modelbert')
+
     path_model = path + '/dataformodel/modelbert'
     model = torch.load(path_model, map_location=device)
 
