@@ -1,7 +1,7 @@
 
 #!/bin/bash
 
-COMMAND=$1
+COMMAND=$@
 
 GIT_TOKEN=$(< gitToken)
 
