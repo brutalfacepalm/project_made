@@ -306,9 +306,9 @@ def predict_form():
 
 
 @click.command()
-@click.option('--host', '-h', default='127.0.0.1')
+@click.option('--host', '-h', default='0.0.0.0')
 @click.option('--port', '-p', default='5000')
-@click.option('--debug', default=True)
+@click.option('--debug', default=False)
 def run_app(host, port, debug):
     app.run(host, port, debug)
 
