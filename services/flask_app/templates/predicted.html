@@ -13,6 +13,7 @@
     {% if not response.error %}
         <div class="form-predict">
             <form method="POST" action="{{ url_for('predict_form') }}">
+<!--                {{ form.hidden_tag() }}-->
                 <div class="row">
                     <div class="name_dish label">
                         Название блюда
@@ -31,19 +32,18 @@
                     </div>
                 </div>
                 {% for result in response %}
-<!--                {{ form.hidden_tag() }}-->
                     <div class="row border_row">
                         <div class="name_dish predict">
                             {% if result.name_dish.current_name|length > 1 %}
                                 {% for word_name in result.name_dish.current_name %}
-                                    <button type="submit" class="word {{ result.word_importance[word_name].class }}" name="name_dish" value="{{ {'name_dish': ' '.join(result.name_dish.current_name), 'product_description': ' '.join(result.product_description.current_description), 'price': result.price, 'deleted': word_name} }}">
+                                    <button type="submit" class="word {{ result.word_importance[word_name].class }}" name="name_dish" value="{{ {'name_dish': ' '.join(result.name_dish.current_name), 'product_description': ' '.join(result.product_description.current_description), 'price': result.price, 'deleted': word_name, 'csrf_token': response[0].csrf_token } }}">
     <!--                                <button type="submit" class="word {{ result.word_importance[word_name].class }}">-->
                                         {{ word_name }}
                                     </button>
                                 {% endfor %}
                             {% else %}
                                 {% for word_name in result.name_dish.current_name %}
-                                    <button type="submit" disabled class="word {{ result.word_importance[word_name].class }}" name="name_dish" value="{{ {'name_dish': ' '.join(result.name_dish.current_name), 'product_description': ' '.join(result.product_description.current_description), 'price': result.price, 'deleted': word_name} }}">
+                                    <button type="submit" disabled class="word {{ result.word_importance[word_name].class }}" name="name_dish" value="{{ {'name_dish': ' '.join(result.name_dish.current_name), 'product_description': ' '.join(result.product_description.current_description), 'price': result.price, 'deleted': word_name, 'csrf_token': response[0].csrf_token } }}">
     <!--                                <button type="submit" class="word {{ result.word_importance[word_name].class }}">-->
                                         {{ word_name }}
                                     </button>
@@ -53,7 +53,7 @@
                         <div class="product_description predict">
                             {% for word_description in result.product_description.current_description %}
                                 {% if word_description != '' %}
-                                    <button type="submit" class="word {{ result.word_importance[word_description].class }}" name="product_description"  value="{{ {'name_dish': ' '.join(result.name_dish.current_name), 'product_description': ' '.join(result.product_description.current_description), 'price': result.price, 'deleted': word_description} }}">
+                                    <button type="submit" class="word {{ result.word_importance[word_description].class }}" name="product_description"  value="{{ {'name_dish': ' '.join(result.name_dish.current_name), 'product_description': ' '.join(result.product_description.current_description), 'price': result.price, 'deleted': word_description, 'csrf_token': response[0].csrf_token } }}">
 <!--                                    <button type="submit" class="word {{ result.word_importance[word_description].class }}">-->
                                         {{ word_description }}
                                     </button>
@@ -84,7 +84,7 @@
 
             <div class="back">
                 <div>
-                    <button type="submit" class="back-button" name="back" value="{{ {'name_dish': ' '.join(response[0]['name_dish']['current_name']), 'product_description': ' '.join(response[0]['product_description']['current_description']), 'price': response[0]['price']} }}">
+                    <button type="submit" class="back-button" name="back" value="{'csrf_token': '{{response[0].csrf_token}}' }">
                         Назад
                     </button>
                 </div>

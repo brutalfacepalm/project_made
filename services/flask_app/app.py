@@ -3,6 +3,7 @@ import sys
 import re
 import logging
 import click
+from collections import OrderedDict
 
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
@@ -32,6 +33,31 @@ app.config.update(
     SECRET_KEY='you-will-never-guess',
 )
 
+class LimitedSizeDict(OrderedDict):
+    def __init__(self, *args, **kwds):
+        self.maxlen = kwds.pop("maxlen", None)
+        OrderedDict.__init__(self, *args, **kwds)
+        self._check_size_limit()
+
+    def __setitem__(self, key, value):
+        OrderedDict.__setitem__(self, key, value)
+        self._check_size_limit()
+
+    def append(self, key, value):
+        self.__setitem__(key, value)
+
+    def extend(self, key, value):
+        if key in list(self.keys()):
+            self[key].append(value)
+
+    def search(self, key):
+        if key in list(self.keys()):
+            return self[key]
+
+    def _check_size_limit(self):
+        if self.maxlen is not None:
+            while len(self) > self.maxlen:
+                self.popitem(last=False)
 
 class IntegerFieldCustom(Field):
     widget = widgets.TextInput()
@@ -88,7 +114,7 @@ class Predictions:
     def __init__(self, model, stemmer):
         self.stemmer = stemmer
         self.model = model
-        self.results = []
+        self.results = LimitedSizeDict(maxlen=1000)
         self.last_response = {}
         self.form = None
 
@@ -199,10 +225,10 @@ class Predictions:
                   'predictions': top_5_prediction,
                   'word_importance': word_importance}
         
-        if result not in self.results:
-            self.results.append(result)
+        # if result not in self.results:
+        #     self.results.append(result)
 
-        return json.dumps(self.results)
+        return json.dumps([result])
 
 
 @app.route("/")
@@ -210,7 +236,7 @@ def index():
     logger.info('Someone connect to service')
     # results = []
     predictions.form = ClientDataForm(ImmutableMultiDict([]))
-    predictions.results = []
+    # predictions.results = []
     predictions.last_response = {}
     return render_template('index.html')
 
@@ -221,16 +247,15 @@ def predict_form():
     form = ClientDataForm(request.form) if request.form.get('csrf_token') else predictions.form
     predictions.form = form
     data = {}
-
-    if request.method == 'POST' and request.form.get('csrf_token') and form.validate_on_submit():
+    if request.method == 'POST' and 'first_predict' in list(request.form.keys()) and form.validate_on_submit():
         data['name_dish'] = request.form.get('name_dish')
         data['product_description'] = request.form.get('product_description')
         data['price'] = request.form.get('price')
-        predictions.results = []
         logger.info('Data for prediction received')
         try:
             logger.info('Try to predict')
             response = json.loads(predictions.predict(data))
+            response[0]['csrf_token'] = request.form.get('csrf_token')
         except ConnectionError:
             response = json.dumps({"error": "ConnectionError"})
             logger.error('Error connection to service')
@@ -241,23 +266,29 @@ def predict_form():
                       'error': str(ke)
                       }
             return render_template('form.html', response=response, form=form)
-        
+
+        predictions.results.append(request.form.get('csrf_token'), response)
         logger.info('Load predicted.html')
         return render_template('predicted.html', response=response, form=form)
 
-    elif not request.form:
-        logger.info('Load form.html')
-        return render_template('form.html', response=predictions.last_response, form=form)
+    # elif not request.form:
+    #     logger.info('Load form.html')
+    #     return render_template('form.html', response=predictions.last_response, form=form)
     elif 'back' in list(request.form.keys()):
         logger.info('Load form.html')
-        response = json.loads(request.form.get('back').replace('\'', '"'))
+        csrf = json.loads(request.form.get('back').replace('\'', '"'))['csrf_token']
+        req = predictions.results.search(csrf)[0]
+        response = {}
+        response['name_dish'] = ' '.join(req['name_dish']['current_name'])
+        response['product_description'] = ' '.join(req['product_description']['current_description'])
+        response['price'] = req['price']
         return render_template('form.html', response=response, form=form)
     else:
-        if 'csrf_token' not in list(request.form.keys()):
+        if 'name_dish' in list(request.form.keys()) or 'product_description' in list(request.form.keys()):
             deleted_key = list(request.form.keys())[0]
             data_request = request.form.get(deleted_key).replace('\'', '"')
             data_request = json.loads(data_request)
-
+            csrf = data_request['csrf_token']
             deleted_word = data_request['deleted']
             data_request[deleted_key] = ' '.join([word for word in data_request[deleted_key].split() if word != deleted_word])
 
@@ -267,15 +298,17 @@ def predict_form():
 
             logger.info('Predict without one word')
             response = json.loads(predictions.predict(data))
+            predictions.results.extend(csrf, response[0])
+            response = predictions.results.search(csrf)
             return render_template('predicted.html', response=response, form=form)
         else:
             return render_template('form.html', response='', form=form)
 
 
 @click.command()
-@click.option('--host', '-h', default='0.0.0.0')
+@click.option('--host', '-h', default='127.0.0.1')
 @click.option('--port', '-p', default='5000')
-@click.option('--debug', default=False)
+@click.option('--debug', default=True)
 def run_app(host, port, debug):
     app.run(host, port, debug)
 
