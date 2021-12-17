@@ -6,7 +6,7 @@ services:
       context: ./services/
       dockerfile: ./flask_app/Dockerfile
     container_name: flask_server
-    platform: linux/amd64
+    #platform: linux/amd64
     #command: gunicorn --bind 0.0.0.0:5000 app:app
     command: python3 app.py
     volumes:

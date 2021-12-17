@@ -84,11 +84,9 @@
 
             <div class="back">
                 <div>
-                    <a href="{{ url_for('predict_form') }}">
-                        <button type="submit" class="back-button">
-                            Назад
-                        </button>
-                    </a>
+                    <button type="submit" class="back-button" name="back" value="{{ {'name_dish': ' '.join(response[0]['name_dish']['current_name']), 'product_description': ' '.join(response[0]['product_description']['current_description']), 'price': response[0]['price']} }}">
+                        Назад
+                    </button>
                 </div>
                 <div>
                     <a href="{{ url_for('index') }}">

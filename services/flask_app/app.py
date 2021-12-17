@@ -221,15 +221,12 @@ def predict_form():
     form = ClientDataForm(request.form) if request.form.get('csrf_token') else predictions.form
     predictions.form = form
     data = {}
-    print(request.form)
+
     if request.method == 'POST' and request.form.get('csrf_token') and form.validate_on_submit():
         data['name_dish'] = request.form.get('name_dish')
         data['product_description'] = request.form.get('product_description')
         data['price'] = request.form.get('price')
         predictions.results = []
-        # predictions.last_response = {'name_dish': request.form.get('name_dish'),
-        #             'product_description': request.form.get('product_description'),
-        #             'price': request.form.get('price')}
         logger.info('Data for prediction received')
         try:
             logger.info('Try to predict')
@@ -247,10 +244,14 @@ def predict_form():
         
         logger.info('Load predicted.html')
         return render_template('predicted.html', response=response, form=form)
-    logger.info('Load form.html')
 
-    if not request.form:
+    elif not request.form:
+        logger.info('Load form.html')
         return render_template('form.html', response=predictions.last_response, form=form)
+    elif 'back' in list(request.form.keys()):
+        logger.info('Load form.html')
+        response = json.loads(request.form.get('back').replace('\'', '"'))
+        return render_template('form.html', response=response, form=form)
     else:
         if 'csrf_token' not in list(request.form.keys()):
             deleted_key = list(request.form.keys())[0]
