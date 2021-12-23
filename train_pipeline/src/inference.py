@@ -7,6 +7,11 @@ class InferenceModel:
         self.preprocess = preprocess
         self.target_encoder = target_encoder
 
+    def predict_proba(self, X):
+        X = self.preprocess.transform(X)
+        pred_proba = self.model.predict_proba(X)
+        return pd.DataFrame(pred_proba, columns=self.target_encoder.classes_)
+
     def predict(self, X):
         X = self.preprocess.transform(X)
         pred = self.model.predict(X)
@@ -30,5 +35,7 @@ if __name__ == '__main__':
     tag = model.predict(query)
     print(query)
     print(tag[0])
+    tag_prob = model.predict_proba(query)
+    print(tag_prob.iloc[0])
 
 

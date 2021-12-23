@@ -1,0 +1,17 @@
+# @package _global_
+
+# to execute this experiment run:
+# python src/train.py experiment=sgd_exp.yaml
+
+defaults:
+  - override /model: null
+
+model:
+  _target_: model.sgd.WeightAdding_SGD
+  alpha: 0.00002
+  weight_adding: 0.3
+
+
+mlflow:
+  experiment_name: "sgd"
+

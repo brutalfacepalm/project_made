@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from timebudget import timebudget
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -14,17 +14,73 @@ from sklearn import metrics
 import mlflow
 
 
-from utils import load_data, load_test_data, reduce_data, extract_target, write_report, check_precision_recall
+from utils import load_data, load_test_data, reduce_Xy, extract_target, write_report, check_precision_recall
 from inference import InferenceModel
 from preprocess.text_process import word_counter
 
 import torch
 import numpy as np
 import random
+import pickle
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+def preprocess_data(config):
+
+        # загружаем данные без дубликатов
+        data = load_data(config.load_data.in_path, config.load_data.out_path)
+        logger.debug(f'load data, len={len(data)}, columns={data.columns}')
+
+        # train, test = split_data(data, config.test_split.test_size)
+        # logger.debug(f'split data, train={len(train)}, test={len(test)}')
+        #logger.debug(f'{train.tags_menu.value_counts()}')
+        #logger.debug(f'{test.tags_menu.value_counts() / train.tags_menu.value_counts()}')
+       
+        X, y = extract_target(data)
+        target_encoder = LabelEncoder()
+        y = target_encoder.fit_transform(y)
+
+        X_train, X_valid, y_train, y_valid = train_test_split(X, y,
+                                                            stratify=y,
+                                                            test_size=config.valid_split.val_size,
+                                                            random_state=0)
+        # предобработка данных
+        preprosess = hydra.utils.instantiate(config.preprocess)
+        with timebudget("preprocess transform"):
+            X_train = preprosess.fit_transform(X_train)
+            X_valid = preprosess.transform(X_valid)
+
+        # X_train = X_train.drop_duplicates()
+        # y_train = y_train[X_train.index]
+
+        # X_valid = X_valid.drop_duplicates()
+        # y_valid = y_valid[X_valid.index]
+
+        # preprosess_train = X_train.copy()
+        # preprosess_train['target'] = target_encoder.inverse_transform(y_train)
+        # preprosess_train = preprosess_train.drop_duplicates()
+        # preprosess_train.to_csv('preprosess_train.csv', index=False)
+
+        # preprosess_valid = X_valid.copy()
+        # preprosess_valid['target'] = target_encoder.inverse_transform(y_valid)
+        # preprosess_valid = preprosess_valid.drop_duplicates()
+        # preprosess_valid.to_csv('preprosess_valid.csv', index=False)
+        # print(f'drop_duplicates, train={len(preprosess_train)}, valid={len(preprosess_valid)}')
+        return X_train, y_train, X_valid, y_valid, target_encoder, preprosess
+
+
+def cache_preprocess_data(config, cache_path='/tmp/preprocess.pkl'):
+    if not config.preprocess_cache or not os.path.exists(cache_path):
+        preprocess_out = preprocess_data(config)
+        with open(cache_path, 'wb') as f:
+            pickle.dump(preprocess_out, f)
+    else:
+        with open(cache_path, 'rb') as file:
+            preprocess_out = pickle.load(file)
+    return preprocess_out
 
 
 def train(config: DictConfig) -> Optional[float]:
@@ -34,6 +90,8 @@ def train(config: DictConfig) -> Optional[float]:
     Returns:
         Optional[float]: Metric score for hyperparameter optimization.
     """
+    # import json
+    # print(json.dumps(OmegaConf.to_container(config), indent=4, sort_keys=False))
 
     np.random.seed(config.seed)
     random.seed(config.seed)
@@ -50,47 +108,14 @@ def train(config: DictConfig) -> Optional[float]:
 
     with mlflow.start_run():
 
-        # загружаем данные без дубликатов
-        data = load_data(config.load_data.in_path, config.load_data.out_path)
-        logger.debug(f'load data, len={len(data)}, columns={data.columns}')
-
-        # тестовый набор
-        X_test, y_test = load_test_data(config.test_data_path)
-        logger.debug(f'test data len = {len(X_test)}, columns = {X_test.columns}')
-        # train, test = split_data(data, config.test_split.test_size)
-        # logger.debug(f'split data, train={len(train)}, test={len(test)}')
-        #logger.debug(f'{train.tags_menu.value_counts()}')
-        #logger.debug(f'{test.tags_menu.value_counts() / train.tags_menu.value_counts()}')
+        X_train, y_train, X_valid, y_valid, target_encoder, preprosess \
+            = cache_preprocess_data(config)
+        logger.debug(f'preprocess data: train={len(X_train)}, valid={len(X_valid)}')
 
         # уменьшаем количество тренировочных данных, если надо
-        train = reduce_data(data, config.train_reduce.class_max_len)
-        logger.debug(f'reduce train size={len(train)}')
-        #logger.debug(f'{train.tags_menu.value_counts()}')
-
-        
-        X, y = extract_target(train)
-        target_encoder = LabelEncoder()
-        y = target_encoder.fit_transform(y)
-
-        X_train, X_valid, y_train, y_valid = train_test_split(X, y,
-                                                            stratify=y,
-                                                            test_size=config.valid_split.val_size,
-                                                            random_state=0)
-        logger.debug(f'split data, train={len(X_train)}, valid={len(X_valid)}')
-
-        # предобработка данных
-        preprosess = hydra.utils.instantiate(config.preprocess)
-        with timebudget("preprocess transform"):
-            X_train = preprosess.fit_transform(X_train)
-            X_valid = preprosess.transform(X_valid)
-
-        # preprosess_train = pd.DataFrame(X_train)
-        # preprosess_train['target'] = target_encoder.inverse_transform(y_train)
-        # preprosess_train.drop_duplicates().to_csv('preprosess_train.csv', index=False)
-
-        # preprosess_valid = pd.DataFrame(X_valid)
-        # preprosess_valid['target'] = target_encoder.inverse_transform(y_valid)
-        # preprosess_valid.drop_duplicates().to_csv('preprosess_valid.csv', index=False)
+        # X_train, y_train = reduce_Xy(X_train, y_train, config.train_reduce.class_max_len)
+        # logger.debug(f'reduce train size={len(X_train)}')
+        # #logger.debug(f'{train.tags_menu.value_counts()}')
 
         # словарь обучения
         name_words = word_counter(X_train['name_dish'])
@@ -105,7 +130,7 @@ def train(config: DictConfig) -> Optional[float]:
         model = hydra.utils.instantiate(config.model)
 
         try:
-            model.fit(X_train, y_train, X_valid, y_valid)
+            model.fit(X_train, y_train, X_valid, y_valid, target_encoder)
         except:
             model.fit(X_train, y_train)
 
@@ -130,6 +155,9 @@ def train(config: DictConfig) -> Optional[float]:
         print(valid_report)
 
         # оцениваем на тестовом датасете
+        X_test, y_test = load_test_data(config.test_data_path)
+        logger.debug(f'test data len = {len(X_test)}, columns = {X_test.columns}')
+
         X_test = preprosess.transform(X_test)
         y_test = target_encoder.transform(y_test)
         pred_test = model.predict(X_test)

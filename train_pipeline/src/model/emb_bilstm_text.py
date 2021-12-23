@@ -8,7 +8,8 @@ class UnionEmbeddingBiLSTM(nn.Module):
         super(UnionEmbeddingBiLSTM, self).__init__()
 
 
-    def set(self, word_embeddings, out_dim, hid_dim=256):
+    def set(self, word_embeddings, out_dim):
+        self.n_classes = out_dim
         self.embedding = nn.Embedding.from_pretrained(torch.FloatTensor(np.array(word_embeddings)), 
                                                       freeze=True)
         self.lstm = nn.LSTM(input_size=self.embedding.weight.shape[-1], 
@@ -18,9 +19,7 @@ class UnionEmbeddingBiLSTM(nn.Module):
                             )
         self.dropout = nn.Dropout(p=0.5)
         self.fc = nn.Sequential(
-            nn.Linear(self.embedding.weight.shape[-1] * 2, hid_dim),
-            nn.ReLU(),
-            nn.Linear(hid_dim, out_dim)
+            nn.Linear(self.embedding.weight.shape[-1], out_dim),
         )
 
         for m in self.fc:
@@ -34,8 +33,7 @@ class UnionEmbeddingBiLSTM(nn.Module):
 
         out, (hidden, cell) = self.lstm(emb)
 
-        output = torch.cat((hidden[0,:,:], hidden[1,:,:]), dim=-1)
-        #output = hidden[1,:,:]
+        output = hidden[1,:,:]
         output = self.fc(self.dropout(output))
         return output
 
@@ -45,6 +43,7 @@ class EmbeddingBiLSTM(nn.Module):
         super(EmbeddingBiLSTM, self).__init__()
 
     def set(self, word_embeddings, out_dim, hid_dim=256, dropout=0.5):
+        self.n_classes = out_dim
         self.embedding = nn.Embedding.from_pretrained(torch.FloatTensor(np.array(word_embeddings)), 
                                                         freeze=True)
         self.lstm = nn.LSTM(input_size=self.embedding.weight.shape[-1], 
@@ -63,7 +62,7 @@ class EmbeddingBiLSTM(nn.Module):
         )
         return self
 
-    def forward(self, name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len, price):
+    def forward(self, name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len):
         name_emb = self.embedding(name_idxs) # batch_len, seq_len, emb_shape
         desc_emb = self.embedding(desc_idxs) # batch_len, seq_len, emb_shape
 
@@ -82,6 +81,7 @@ class EmbeddingBiLSTM2(nn.Module):
         super(EmbeddingBiLSTM2, self).__init__()
 
     def set(self, word_embeddings, out_dim, hid_dim=256):
+        self.n_classes = out_dim
         self.embedding = nn.Embedding.from_pretrained(torch.FloatTensor(np.array(word_embeddings)), 
                                                         freeze=True)
         self.name_lstm = nn.LSTM(input_size=self.embedding.weight.shape[-1], 
@@ -103,7 +103,7 @@ class EmbeddingBiLSTM2(nn.Module):
         )
         return self
 
-    def forward(self, name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len, price):
+    def forward(self, name_idxs, name_len, desc_idxs, desc_len, union_idxs, union_len):
         name_emb = self.embedding(name_idxs) # batch_len, seq_len, emb_shape
         desc_emb = self.embedding(desc_idxs) # batch_len, seq_len, emb_shape
 

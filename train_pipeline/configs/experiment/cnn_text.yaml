@@ -1,7 +1,7 @@
 # @package _global_
 
 # to execute this experiment run:
-# python src/train.py experiment=emb_bilstm.yaml
+# python src/train.py experiment=cnn_text.yaml
 
 defaults:
   - override /model: null
@@ -9,14 +9,14 @@ defaults:
 model:
   _target_: nn_utils.emb_clf.EmbeddingClassifier
   emb_model: 
-    _target_: model.emb_bilstm_text.UnionEmbeddingBiLSTM
+    _target_: model.cnn_text.TextCnnModel
   embedding_fun: 
     _target_: nn_utils.word_embedding.CompressFastTextEmb 
     model_path: /tmp/compress_fast_text.model
     load_url: https://github.com/avidale/compress-fasttext/releases/download/v0.0.4/08_11_3_6_model_400K_100K_pq300.bin
     # _target_: nn_utils.word_embedding.RusVectoresEmb
     # model_path: /media/elena/13e9efd4-799d-4087-8d03-b4e8eea4a3cc2/MADE_DATA/3sem/Project/213/model.model
-  lr: 0.01
+  lr: 0.003
   weight_decay: 1e-5
   n_epoch: 2
   n_unfreeze: 1
@@ -24,9 +24,9 @@ model:
   scheduler_gamma: 0.5
   weighted_sampler: False
   weight_adding: 1.2
-  batch_size: 1024
+  batch_size: 2048
 
 
 
 mlflow:
-  experiment_name: "emb_bilstm"
+  experiment_name: "cnn_text"

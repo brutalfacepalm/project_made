@@ -3,21 +3,28 @@
 # to execute this experiment run:
 # python src/train.py experiment=mean_emb_nn.yaml
 
-# defaults:
-#   - override /model: null
+defaults:
+  - override /model: null
 
 model:
   _target_: nn_utils.emb_clf.EmbeddingClassifier
   emb_model: 
-    _target_: model.mean_emb_text.CatMeanEmbeddingModel2
+    _target_: model.mean_emb_text.CatMeanEmbeddingModel
   embedding_fun: 
-    _target_: nn_utils.word_embedding.RusVectoresEmb
-    model_path: /media/elena/13e9efd4-799d-4087-8d03-b4e8eea4a3cc2/MADE_DATA/3sem/Project/213/model.model
-    #_target_: nn_utils.word_embedding.CompressFastTextEmb 
-    #model_path: /tmp/compress_fast_text.model
-    #load_url: https://github.com/avidale/compress-fasttext/releases/download/v0.0.4/08_11_3_6_model_400K_100K_pq300.bin
-  lr: 0.001
-  n_epoch: 5
+    # _target_: nn_utils.word_embedding.RusVectoresEmb
+    # model_path: /media/elena/13e9efd4-799d-4087-8d03-b4e8eea4a3cc2/MADE_DATA/3sem/Project/213/model.model
+    _target_: nn_utils.word_embedding.CompressFastTextEmb 
+    model_path: /tmp/compress_fast_text.model
+    load_url: https://github.com/avidale/compress-fasttext/releases/download/v0.0.4/08_11_3_6_model_400K_100K_pq300.bin
+  lr: 0.01
+  weight_decay: 1e-5
+  n_epoch: 2
+  n_unfreeze: 1
+  scheduler_step: 1
+  scheduler_gamma: 0.5
+  weighted_sampler: False
+  weight_adding: 1.3
+  batch_size: 2048
 
 
 

@@ -87,7 +87,9 @@ class KeepCommonTransformer(BaseEstimator, TransformerMixin):
             for cnt in word_counters
         ]
         keep_counter = sum(keep_counters, Counter())
-        keep_words = set(w for w, c in keep_counter.items())
+        keep_words = set(w for w, c in keep_counter.items() if len(w) > 2)
+        stop_words = ['nan', 'для', 'или', 'ваш', 'это', 'наш', 'ный', 'хит']
+        keep_words -= set(stop_words)
         return keep_words
 
     def fit(self, X: pd.DataFrame, y: pd.Series = None):

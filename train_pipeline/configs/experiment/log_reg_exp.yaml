@@ -3,12 +3,13 @@
 # to execute this experiment run:
 # python src/train.py experiment=log_reg_exp.yaml
 
-# defaults:
-#   - override /model: null
+defaults:
+  - override /model: null
 
 model:
-  _target_: model.log_reg.TfIdf_LogReg
+  _target_: model.log_reg.WeightAdding_LogReg
   C: 0.1
+  weight_adding: 0.8
 
 
 mlflow:

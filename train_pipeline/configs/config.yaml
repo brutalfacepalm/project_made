@@ -13,7 +13,7 @@ defaults:
 
 
 mlflow:
-  #tracking_uri: file://project_made/train_pipeline/mlruns
+  # tracking_uri: file://project_made/train_pipeline/mlruns
   tracking_uri: http://madeclassifirefoodtype.ru:4040/
   experiment_name: "default"
   
@@ -25,20 +25,15 @@ load_data:
 
 test_data_path: data/golden_set_custom.csv
 
-# test_split:
-#   test_size: 0.1
-
-train_reduce:
-  class_max_len: 10000
-
 valid_split:
   val_size: 0.2
 
+preprocess_cache: True
 preprocess:
   _target_: preprocess.transform_pipeline.PreprocessNameDesc
   to_spell_path: project_made/preprocess/to_spell.npy
-  max_len: 10000
+  threshold_cnt: 10
 
-inference_path: model.pkl
+inference_path: /tmp/model.pkl
 
 

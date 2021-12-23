@@ -55,6 +55,10 @@ def sample_class(data: pd.DataFrame, class_value: str, n_cases: int, seed=0) -> 
         return class_data.sample(n=n_cases, random_state=seed)
 
 
+def extract_target(data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
+    return data.drop(columns='tags_menu'), data['tags_menu']
+
+
 def reduce_data(data: pd.DataFrame, class_max_len: int) -> pd.DataFrame:
     data_reduced = pd.concat(
                     [sample_class(data, name, class_max_len, seed=i)
@@ -63,8 +67,11 @@ def reduce_data(data: pd.DataFrame, class_max_len: int) -> pd.DataFrame:
     return data_reduced
 
 
-def extract_target(data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
-    return data.drop(columns='tags_menu'), data['tags_menu']
+def reduce_Xy(X: pd.DataFrame, y:pd.Series, class_max_len: int) -> pd.DataFrame:
+    data = X.copy()
+    data['tags_menu'] = y
+    data_reduced = reduce_data(data, class_max_len)
+    return extract_target(data_reduced)
 
 
 def write_report(report, path):
